@@ -354,10 +354,22 @@
     border-left:3px solid var(--text-muted);transition:transform .2s ease, border-color .2s ease;
   }
   .risk-card:hover{transform:translateY(-2px)}
-  .risk-card.r-prompt{border-left-color:var(--red)}
-  .risk-card.r-leak{border-left-color:var(--amber)}
-  .risk-card.r-bias{border-left-color:var(--emerald)}
-  .risk-card.r-supply{border-left-color:var(--blue)}
+  /* OWASP LLM Top 10 (2025) — colour-tier groupings:
+       red    = direct adversarial input / output handling
+       amber  = data exposure / supply chain
+       blue   = systemic and infrastructural
+       emerald = governance / fairness (cross-cutting) */
+  .risk-card.r-prompt        {border-left-color:var(--red)}      /* LLM01 */
+  .risk-card.r-leak          {border-left-color:var(--amber)}    /* LLM02 */
+  .risk-card.r-supply        {border-left-color:var(--amber)}    /* LLM03 */
+  .risk-card.r-poison        {border-left-color:var(--amber)}    /* LLM04 */
+  .risk-card.r-output        {border-left-color:var(--red)}      /* LLM05 */
+  .risk-card.r-agency        {border-left-color:var(--red)}      /* LLM06 */
+  .risk-card.r-prompt-leak   {border-left-color:var(--blue)}     /* LLM07 */
+  .risk-card.r-vector        {border-left-color:var(--blue)}     /* LLM08 */
+  .risk-card.r-misinfo       {border-left-color:var(--amber)}    /* LLM09 */
+  .risk-card.r-consumption   {border-left-color:var(--red)}      /* LLM10 */
+  .risk-card.r-bias          {border-left-color:var(--emerald)}  /* cross-cutting */
   .risk-card .meta{
     font-family:'JetBrains Mono',monospace;
     font-size:10px;color:var(--text-muted);margin-bottom:6px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;
@@ -906,7 +918,7 @@
       <div class="section-head">
         <div class="kicker">How it works</div>
         <h2>Five flows on one page.</h2>
-        <p>The kit's operating model in pictures — endpoint, SDLC, hardening, sandbox, and LLM application guardrails. Colour encodes meaning, not decoration: red for guards and forbidden actions, amber for caution, emerald for the safe path, blue for context.</p>
+        <p>The kit's operating model in pictures, in the order the story flows: where AI tools live (endpoint), how they're contained (policy-as-code hardening), how the apps they build get to production (SDLC), where those apps live during validation (sandbox), and the per-request guardrails for LLM features inside them. Colour encodes meaning, not decoration: red for guards and forbidden actions, amber for caution, emerald for the safe path, blue for context.</p>
       </div>
 
       <div class="diagrams-stack">
@@ -1002,7 +1014,140 @@
         </div>
 
         <!-- ============================================================== -->
-        <!-- DIAGRAM 2: SDLC Promotion                                       -->
+        <!-- DIAGRAM 2: Policy-as-code Hardening                             -->
+        <!-- ============================================================== -->
+        <div class="diagram-card">
+          <div class="diagram-head">
+            <h3>Hardening — policy as code</h3>
+            <span class="tag">One YAML · five emitters · MDM-deployed</span>
+          </div>
+          <p class="diagram-desc">A single <code style="background:var(--surface-3);padding:1px 5px;border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:12px">policy.yaml</code> is the source of truth. The emitter compiles it into vendor-native enforcement files, MDM ships them to endpoints, the pre-flight script verifies the boundary holds, and SIEM gets the proof.</p>
+
+          <svg class="diagram-svg" viewBox="0 0 960 540" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Policy-as-code hardening flow">
+            <defs>
+              <marker id="hd-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155"/>
+              </marker>
+              <marker id="hd-arr-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#dc2626"/>
+              </marker>
+            </defs>
+
+            <!-- Source of truth -->
+            <rect x="370" y="20" width="220" height="56" rx="8" class="b-fill-red" stroke="#dc2626" stroke-width="1.5"/>
+            <text x="480" y="44" text-anchor="middle" class="t-dark">policy.yaml</text>
+            <text x="480" y="64" text-anchor="middle" class="t-red">SINGLE SOURCE OF TRUTH</text>
+
+            <line x1="480" y1="76" x2="480" y2="104" class="arrow" marker-end="url(#hd-arr)"/>
+
+            <!-- Emitter -->
+            <rect x="395" y="106" width="170" height="40" rx="8" class="b-fill-dark"/>
+            <text x="480" y="130" text-anchor="middle" class="t-light">emit.py</text>
+
+            <line x1="480" y1="146" x2="480" y2="170" class="arrow" marker-end="url(#hd-arr)"/>
+
+            <!-- Five outputs row -->
+            <!-- m-settings -->
+            <g>
+              <rect x="20" y="186" width="170" height="74" rx="8" class="b-fill" stroke="#0f172a" stroke-width="1.5"/>
+              <text x="105" y="208" text-anchor="middle" class="t-dark">managed-settings</text>
+              <text x="105" y="224" text-anchor="middle" class="t-dark">.json</text>
+              <text x="105" y="244" text-anchor="middle" class="t-mono" fill="#64748b">CLAUDE CODE</text>
+            </g>
+
+            <!-- AppLocker -->
+            <g>
+              <rect x="200" y="186" width="170" height="74" rx="8" class="b-fill" stroke="#0f172a" stroke-width="1.5"/>
+              <text x="285" y="208" text-anchor="middle" class="t-dark">applocker.xml</text>
+              <text x="285" y="232" text-anchor="middle" class="t-mono" fill="#64748b">WINDOWS · OMA-URI</text>
+              <text x="285" y="248" text-anchor="middle" class="t-mono" fill="#64748b">CSP push</text>
+            </g>
+
+            <!-- TCC -->
+            <g>
+              <rect x="380" y="186" width="170" height="74" rx="8" class="b-fill" stroke="#0f172a" stroke-width="1.5"/>
+              <text x="465" y="208" text-anchor="middle" class="t-dark">aigov-tcc</text>
+              <text x="465" y="224" text-anchor="middle" class="t-dark">.mobileconfig</text>
+              <text x="465" y="244" text-anchor="middle" class="t-mono" fill="#64748b">macOS</text>
+            </g>
+
+            <!-- firejail -->
+            <g>
+              <rect x="560" y="186" width="170" height="74" rx="8" class="b-fill" stroke="#0f172a" stroke-width="1.5"/>
+              <text x="645" y="208" text-anchor="middle" class="t-dark">firejail-aigov</text>
+              <text x="645" y="224" text-anchor="middle" class="t-dark">.profile</text>
+              <text x="645" y="244" text-anchor="middle" class="t-mono" fill="#64748b">LINUX</text>
+            </g>
+
+            <!-- network allow-list -->
+            <g>
+              <rect x="740" y="186" width="200" height="74" rx="8" class="b-fill" stroke="#0f172a" stroke-width="1.5"/>
+              <text x="840" y="208" text-anchor="middle" class="t-dark">network-allow-list</text>
+              <text x="840" y="224" text-anchor="middle" class="t-dark">.txt</text>
+              <text x="840" y="244" text-anchor="middle" class="t-mono" fill="#64748b">PROXY / SSE</text>
+            </g>
+
+            <!-- Fan-out arrows from emit.py -->
+            <line x1="430" y1="170" x2="115" y2="186" class="arrow" marker-end="url(#hd-arr)"/>
+            <line x1="455" y1="170" x2="290" y2="186" class="arrow" marker-end="url(#hd-arr)"/>
+            <line x1="480" y1="170" x2="465" y2="186" class="arrow" marker-end="url(#hd-arr)"/>
+            <line x1="505" y1="170" x2="640" y2="186" class="arrow" marker-end="url(#hd-arr)"/>
+            <line x1="530" y1="170" x2="830" y2="186" class="arrow" marker-end="url(#hd-arr)"/>
+
+            <!-- MDM converge -->
+            <line x1="105" y1="260" x2="430" y2="294" class="arrow" marker-end="url(#hd-arr)"/>
+            <line x1="285" y1="260" x2="450" y2="294" class="arrow" marker-end="url(#hd-arr)"/>
+            <line x1="465" y1="260" x2="480" y2="294" class="arrow" marker-end="url(#hd-arr)"/>
+            <line x1="645" y1="260" x2="510" y2="294" class="arrow" marker-end="url(#hd-arr)"/>
+            <line x1="840" y1="260" x2="530" y2="294" class="arrow" marker-end="url(#hd-arr)"/>
+
+            <!-- MDM box -->
+            <rect x="370" y="296" width="220" height="56" rx="8" class="b-fill-blue" stroke="#2563eb" stroke-width="1.5"/>
+            <text x="480" y="320" text-anchor="middle" class="t-dark">MDM</text>
+            <text x="480" y="340" text-anchor="middle" class="t-blue">INTUNE · JAMF · KANDJI</text>
+
+            <line x1="480" y1="352" x2="480" y2="382" class="arrow" marker-end="url(#hd-arr)"/>
+
+            <!-- Endpoints row — widened to 230 wide to give path text breathing room -->
+            <g>
+              <rect x="120" y="386" width="230" height="60" rx="8" class="b-fill-emerald" stroke="#10b981" stroke-width="1.5"/>
+              <text x="235" y="408" text-anchor="middle" class="t-dark">macOS</text>
+              <text x="235" y="426" text-anchor="middle" class="t-mono" fill="#64748b">/Library/.../ClaudeCode/</text>
+
+              <rect x="365" y="386" width="230" height="60" rx="8" class="b-fill-emerald" stroke="#10b981" stroke-width="1.5"/>
+              <text x="480" y="408" text-anchor="middle" class="t-dark">Windows 11</text>
+              <text x="480" y="426" text-anchor="middle" class="t-mono" fill="#64748b">C:\ProgramData\ClaudeCode\</text>
+
+              <rect x="610" y="386" width="230" height="60" rx="8" class="b-fill-emerald" stroke="#10b981" stroke-width="1.5"/>
+              <text x="725" y="408" text-anchor="middle" class="t-dark">Linux</text>
+              <text x="725" y="426" text-anchor="middle" class="t-mono" fill="#64748b">/etc/claude-code/</text>
+            </g>
+
+            <!-- Verification loop arrows — recalculated to land on new endpoint x-centers -->
+            <line x1="235" y1="446" x2="160" y2="490" class="arrow" stroke="#dc2626" marker-end="url(#hd-arr-red)"/>
+            <line x1="480" y1="446" x2="480" y2="490" class="arrow" stroke="#dc2626" marker-end="url(#hd-arr-red)"/>
+            <line x1="725" y1="446" x2="800" y2="490" class="arrow" stroke="#dc2626" marker-end="url(#hd-arr-red)"/>
+
+            <!-- Pre-flight + SIEM -->
+            <rect x="60" y="492" width="200" height="40" rx="8" class="b-fill-dark"/>
+            <text x="160" y="516" text-anchor="middle" class="t-light">Pre-flight script</text>
+
+            <line x1="260" y1="512" x2="380" y2="512" class="arrow" marker-end="url(#hd-arr-red)" stroke="#dc2626"/>
+
+            <rect x="380" y="492" width="200" height="40" rx="8" class="b-fill-dark"/>
+            <text x="480" y="516" text-anchor="middle" class="t-light">SIEM</text>
+
+            <line x1="580" y1="512" x2="700" y2="512" class="arrow" marker-end="url(#hd-arr-red)" stroke="#dc2626"/>
+
+            <rect x="700" y="492" width="200" height="40" rx="8" class="b-fill-dark"/>
+            <text x="800" y="516" text-anchor="middle" class="t-light">Drift alerts</text>
+          </svg>
+        </div>
+
+      </div>
+
+        <!-- ============================================================== -->
+        <!-- DIAGRAM 3: SDLC Promotion                                       -->
         <!-- ============================================================== -->
         <div class="diagram-card">
           <div class="diagram-head">
@@ -1138,139 +1283,6 @@
             <text x="32" y="332" class="t-mono" fill="#64748b">hard exit · blocks promotion</text>
           </svg>
         </div>
-
-        <!-- ============================================================== -->
-        <!-- DIAGRAM 3: Policy-as-code Hardening                             -->
-        <!-- ============================================================== -->
-        <div class="diagram-card">
-          <div class="diagram-head">
-            <h3>Hardening — policy as code</h3>
-            <span class="tag">One YAML · five emitters · MDM-deployed</span>
-          </div>
-          <p class="diagram-desc">A single <code style="background:var(--surface-3);padding:1px 5px;border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:12px">policy.yaml</code> is the source of truth. The emitter compiles it into vendor-native enforcement files, MDM ships them to endpoints, the pre-flight script verifies the boundary holds, and SIEM gets the proof.</p>
-
-          <svg class="diagram-svg" viewBox="0 0 960 540" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Policy-as-code hardening flow">
-            <defs>
-              <marker id="hd-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155"/>
-              </marker>
-              <marker id="hd-arr-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                <path d="M 0 0 L 10 5 L 0 10 z" fill="#dc2626"/>
-              </marker>
-            </defs>
-
-            <!-- Source of truth -->
-            <rect x="370" y="20" width="220" height="56" rx="8" class="b-fill-red" stroke="#dc2626" stroke-width="1.5"/>
-            <text x="480" y="44" text-anchor="middle" class="t-dark">policy.yaml</text>
-            <text x="480" y="64" text-anchor="middle" class="t-red">SINGLE SOURCE OF TRUTH</text>
-
-            <line x1="480" y1="76" x2="480" y2="104" class="arrow" marker-end="url(#hd-arr)"/>
-
-            <!-- Emitter -->
-            <rect x="395" y="106" width="170" height="40" rx="8" class="b-fill-dark"/>
-            <text x="480" y="130" text-anchor="middle" class="t-light">emit.py</text>
-
-            <line x1="480" y1="146" x2="480" y2="170" class="arrow" marker-end="url(#hd-arr)"/>
-
-            <!-- Five outputs row -->
-            <!-- m-settings -->
-            <g>
-              <rect x="20" y="186" width="170" height="74" rx="8" class="b-fill" stroke="#0f172a" stroke-width="1.5"/>
-              <text x="105" y="208" text-anchor="middle" class="t-dark">managed-settings</text>
-              <text x="105" y="224" text-anchor="middle" class="t-dark">.json</text>
-              <text x="105" y="244" text-anchor="middle" class="t-mono" fill="#64748b">CLAUDE CODE</text>
-            </g>
-
-            <!-- AppLocker -->
-            <g>
-              <rect x="200" y="186" width="170" height="74" rx="8" class="b-fill" stroke="#0f172a" stroke-width="1.5"/>
-              <text x="285" y="208" text-anchor="middle" class="t-dark">applocker.xml</text>
-              <text x="285" y="232" text-anchor="middle" class="t-mono" fill="#64748b">WINDOWS · OMA-URI</text>
-              <text x="285" y="248" text-anchor="middle" class="t-mono" fill="#64748b">CSP push</text>
-            </g>
-
-            <!-- TCC -->
-            <g>
-              <rect x="380" y="186" width="170" height="74" rx="8" class="b-fill" stroke="#0f172a" stroke-width="1.5"/>
-              <text x="465" y="208" text-anchor="middle" class="t-dark">aigov-tcc</text>
-              <text x="465" y="224" text-anchor="middle" class="t-dark">.mobileconfig</text>
-              <text x="465" y="244" text-anchor="middle" class="t-mono" fill="#64748b">macOS</text>
-            </g>
-
-            <!-- firejail -->
-            <g>
-              <rect x="560" y="186" width="170" height="74" rx="8" class="b-fill" stroke="#0f172a" stroke-width="1.5"/>
-              <text x="645" y="208" text-anchor="middle" class="t-dark">firejail-aigov</text>
-              <text x="645" y="224" text-anchor="middle" class="t-dark">.profile</text>
-              <text x="645" y="244" text-anchor="middle" class="t-mono" fill="#64748b">LINUX</text>
-            </g>
-
-            <!-- network allow-list -->
-            <g>
-              <rect x="740" y="186" width="200" height="74" rx="8" class="b-fill" stroke="#0f172a" stroke-width="1.5"/>
-              <text x="840" y="208" text-anchor="middle" class="t-dark">network-allow-list</text>
-              <text x="840" y="224" text-anchor="middle" class="t-dark">.txt</text>
-              <text x="840" y="244" text-anchor="middle" class="t-mono" fill="#64748b">PROXY / SSE</text>
-            </g>
-
-            <!-- Fan-out arrows from emit.py -->
-            <line x1="430" y1="170" x2="115" y2="186" class="arrow" marker-end="url(#hd-arr)"/>
-            <line x1="455" y1="170" x2="290" y2="186" class="arrow" marker-end="url(#hd-arr)"/>
-            <line x1="480" y1="170" x2="465" y2="186" class="arrow" marker-end="url(#hd-arr)"/>
-            <line x1="505" y1="170" x2="640" y2="186" class="arrow" marker-end="url(#hd-arr)"/>
-            <line x1="530" y1="170" x2="830" y2="186" class="arrow" marker-end="url(#hd-arr)"/>
-
-            <!-- MDM converge -->
-            <line x1="105" y1="260" x2="430" y2="294" class="arrow" marker-end="url(#hd-arr)"/>
-            <line x1="285" y1="260" x2="450" y2="294" class="arrow" marker-end="url(#hd-arr)"/>
-            <line x1="465" y1="260" x2="480" y2="294" class="arrow" marker-end="url(#hd-arr)"/>
-            <line x1="645" y1="260" x2="510" y2="294" class="arrow" marker-end="url(#hd-arr)"/>
-            <line x1="840" y1="260" x2="530" y2="294" class="arrow" marker-end="url(#hd-arr)"/>
-
-            <!-- MDM box -->
-            <rect x="370" y="296" width="220" height="56" rx="8" class="b-fill-blue" stroke="#2563eb" stroke-width="1.5"/>
-            <text x="480" y="320" text-anchor="middle" class="t-dark">MDM</text>
-            <text x="480" y="340" text-anchor="middle" class="t-blue">INTUNE · JAMF · KANDJI</text>
-
-            <line x1="480" y1="352" x2="480" y2="382" class="arrow" marker-end="url(#hd-arr)"/>
-
-            <!-- Endpoints row — widened to 230 wide to give path text breathing room -->
-            <g>
-              <rect x="120" y="386" width="230" height="60" rx="8" class="b-fill-emerald" stroke="#10b981" stroke-width="1.5"/>
-              <text x="235" y="408" text-anchor="middle" class="t-dark">macOS</text>
-              <text x="235" y="426" text-anchor="middle" class="t-mono" fill="#64748b">/Library/.../ClaudeCode/</text>
-
-              <rect x="365" y="386" width="230" height="60" rx="8" class="b-fill-emerald" stroke="#10b981" stroke-width="1.5"/>
-              <text x="480" y="408" text-anchor="middle" class="t-dark">Windows 11</text>
-              <text x="480" y="426" text-anchor="middle" class="t-mono" fill="#64748b">C:\ProgramData\ClaudeCode\</text>
-
-              <rect x="610" y="386" width="230" height="60" rx="8" class="b-fill-emerald" stroke="#10b981" stroke-width="1.5"/>
-              <text x="725" y="408" text-anchor="middle" class="t-dark">Linux</text>
-              <text x="725" y="426" text-anchor="middle" class="t-mono" fill="#64748b">/etc/claude-code/</text>
-            </g>
-
-            <!-- Verification loop arrows — recalculated to land on new endpoint x-centers -->
-            <line x1="235" y1="446" x2="160" y2="490" class="arrow" stroke="#dc2626" marker-end="url(#hd-arr-red)"/>
-            <line x1="480" y1="446" x2="480" y2="490" class="arrow" stroke="#dc2626" marker-end="url(#hd-arr-red)"/>
-            <line x1="725" y1="446" x2="800" y2="490" class="arrow" stroke="#dc2626" marker-end="url(#hd-arr-red)"/>
-
-            <!-- Pre-flight + SIEM -->
-            <rect x="60" y="492" width="200" height="40" rx="8" class="b-fill-dark"/>
-            <text x="160" y="516" text-anchor="middle" class="t-light">Pre-flight script</text>
-
-            <line x1="260" y1="512" x2="380" y2="512" class="arrow" marker-end="url(#hd-arr-red)" stroke="#dc2626"/>
-
-            <rect x="380" y="492" width="200" height="40" rx="8" class="b-fill-dark"/>
-            <text x="480" y="516" text-anchor="middle" class="t-light">SIEM</text>
-
-            <line x1="580" y1="512" x2="700" y2="512" class="arrow" marker-end="url(#hd-arr-red)" stroke="#dc2626"/>
-
-            <rect x="700" y="492" width="200" height="40" rx="8" class="b-fill-dark"/>
-            <text x="800" y="516" text-anchor="middle" class="t-light">Drift alerts</text>
-          </svg>
-        </div>
-
-      </div>
 
       <!-- ============================================================== -->
       <!-- DIAGRAM 4: AI-built app sandbox architecture                    -->
@@ -1512,76 +1524,7 @@
         </svg>
       </div>
 
-      <!-- Per-tool enforcement matrix — addresses "what about Codex / Copilot / Cursor" -->
-      <div class="diagram-card" id="per-tool" style="margin-top:22px">
-        <div class="diagram-head">
-          <h3>What enforces what — per AI tool</h3>
-          <span class="tag">Matrix · honest scope</span>
-        </div>
-        <p class="diagram-desc">Only Anthropic Claude Code publishes a managed-config file format an MDM admin can push to endpoints today. For every other tool, enforcement is vendor admin + per-repo drop-in + OS-level + corporate proxy. The four <strong>universal controls</strong> (Dev Drive / TCC / firejail · proxy egress · app allow-list · pre-flight) apply identically across all of them.</p>
-
-        <div style="overflow-x:auto;margin-top:10px">
-          <table class="crosswalk" style="font-size:12.5px">
-            <thead>
-              <tr>
-                <th>Tool</th>
-                <th>Vendor admin (web)</th>
-                <th>Per-repo drop-in</th>
-                <th>Managed file (MDM-deployable)</th>
-                <th>Universal controls apply</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><strong>Anthropic Claude Code</strong></td>
-                <td>docs.anthropic.com → Claude Code IAM</td>
-                <td><code>.claude/settings.json</code></td>
-                <td style="color:#047857;font-weight:600">Yes — managed-settings.json</td>
-                <td>Yes</td>
-              </tr>
-              <tr>
-                <td><strong>GitHub Copilot</strong></td>
-                <td>GitHub Enterprise → Settings → Copilot → Policies</td>
-                <td><code>.github/copilot-instructions.md</code></td>
-                <td style="color:#b45309;font-weight:600">No — admin policies + per-repo file only</td>
-                <td>Yes</td>
-              </tr>
-              <tr>
-                <td><strong>OpenAI Codex CLI</strong></td>
-                <td>platform.openai.com → Project / API keys</td>
-                <td><code>.codex/instructions.md</code></td>
-                <td style="color:#b45309;font-weight:600">No — per-user <code>~/.codex/config.toml</code> only</td>
-                <td>Yes</td>
-              </tr>
-              <tr>
-                <td><strong>Cursor</strong></td>
-                <td>Cursor admin (Business/Enterprise plan)</td>
-                <td><code>.cursorrules</code></td>
-                <td style="color:#b45309;font-weight:600">No — per-user <code>~/.cursor/settings.json</code> only</td>
-                <td>Yes</td>
-              </tr>
-              <tr>
-                <td><strong>ChatGPT desktop</strong></td>
-                <td>OpenAI workspace admin</td>
-                <td>—</td>
-                <td style="color:#dc2626;font-weight:600">No — admin console only</td>
-                <td>Yes</td>
-              </tr>
-              <tr>
-                <td><strong>M365 Copilot</strong></td>
-                <td>Microsoft 365 admin centre + Intune</td>
-                <td>Sensitivity labels per-document</td>
-                <td style="color:#047857;font-weight:600">Yes — Purview / Intune policies</td>
-                <td>Yes</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <p style="font-size:13px;color:var(--text-soft);margin-top:14px;line-height:1.65"><strong>The kit ships drop-in templates</strong> for each per-repo file (Copilot instructions, Cursor rules, Codex project instructions) under <code>templates/per-tool/</code>. The four universal controls are governed by <code>endpoint-policy/policy.yaml</code> and apply uniformly to every tool listed above.</p>
-      </div>
-
-    </div>
+</div>
   </section>
 
   <!-- TEMPLATES -->
@@ -1834,7 +1777,7 @@
       <div class="section-head">
         <div class="kicker">Step-by-step guides</div>
         <h2>Walk through it. Don't read a 30-page doc.</h2>
-        <p>Two guided flows. The first protects every developer endpoint with an enforced policy via Microsoft Intune; the second runs every AI-built application through a six-stage promotion path before it reaches production. Pick a tab, follow the numbered steps, tick off as you go.</p>
+        <p>Three guided flows. The first protects every developer endpoint with an enforced policy via Microsoft Intune; the second stands up the isolated sandbox an AI-built application lives in during Stage 5; the third runs every AI-built application through the six-stage promotion path before it reaches production. Pick a tab, follow the numbered steps, tick off as you go.</p>
         <p style="font-size:14px;color:var(--text-muted);margin-top:14px;line-height:1.65"><strong style="color:var(--red)">Note on Intune navigation:</strong> Microsoft refreshes the Intune admin centre and the Microsoft Defender XDR portal frequently. Menu paths quoted below reflect the layout at the time of writing — feature names are the stable signal, not the breadcrumbs. If a path doesn't match what you see in your tenant, use the portal's top search box, then verify against the current Microsoft Learn documentation before deploying.</p>
       </div>
 
@@ -2012,7 +1955,155 @@
         </div>
       </div>
 
-      <!-- ============ GUIDE 2: SDLC PROMOTION ============ -->
+      <!-- ============ GUIDE 2: SANDBOX SETUP ============ -->
+      <div class="guide" id="g-sandbox-guide">
+        <div class="guide-head">
+          <h3>Stand up the AI-built app sandbox</h3>
+          <span class="badge">three patterns · Cloudflare · Docker · Kubernetes</span>
+        </div>
+        <div class="guide-tabs" data-guide="sandbox">
+          <button class="guide-tab active" data-target="g-sb-cf">Cloudflare</button>
+          <button class="guide-tab" data-target="g-sb-docker">Docker</button>
+          <button class="guide-tab" data-target="g-sb-k8s">Kubernetes</button>
+        </div>
+        <div class="guide-content">
+
+          <!-- Cloudflare -->
+          <div class="guide-panel active" id="g-sb-cf">
+            <ol class="steps-list">
+              <li><div class="step-body">
+                <h4>Step 1 — Prerequisites</h4>
+                <p><strong>Owner:</strong> Platform Engineering.&nbsp; <strong>Exit:</strong> Cloudflare Workers paid plan + Access on the zone, plus the build artefact already cosign-signed by Stage 3 of the SDLC.</p>
+                <p>Confirm Cloudflare account has Workers (paid), Access (Zero Trust), and the relevant resource bindings you need (D1 / R2 / KV). Identity provider hooked into Access via SAML / OIDC. <code>wrangler</code> CLI installed locally (<code>npm install -g wrangler</code>) and authenticated against the production-isolated tenant (not your prod tenant).</p>
+              </div></li>
+
+              <li><div class="step-body">
+                <h4>Step 2 — Customise <code>wrangler.toml</code></h4>
+                <p><strong>Exit:</strong> tokens replaced; <code>wrangler deploy --dry-run</code> succeeds.</p>
+                <p>Use the Customisation Wizard above with the <em>Sandbox tenant slug</em> and <em>Sandbox owner email</em> fields filled, or replace <code>[REPLACE_WITH_TENANT_SLUG]</code> and <code>[REPLACE_WITH_OWNER_EMAIL]</code> manually. Verify each <code>[[d1_databases]]</code> / <code>[[r2_buckets]]</code> / <code>[[kv_namespaces]]</code> entry references the sandbox-only resources, not production. The <code>[triggers]</code> cron entry tears the deployment down at 14 days — leave it on.</p>
+                <a class="step-link" href="templates/sandbox/wrangler.toml" download>↓ wrangler.toml</a>
+              </div></li>
+
+              <li><div class="step-body">
+                <h4>Step 3 — Cloudflare Access policy</h4>
+                <p><strong>Exit:</strong> only <em>security-reviewers</em> SSO group can reach the sandbox URL.</p>
+                <p>In the Cloudflare Zero Trust dashboard → Access → Applications → <strong>Add an application</strong>. Bind to the sandbox subdomain. Add a single Allow rule: SSO group is <em>security-reviewers</em> AND device posture is <em>compliant</em> AND MFA is <em>enabled</em>. Block everything else. Add session duration ≤ 8 hours. Log all access events to your SIEM via the Cloudflare Logpush job.</p>
+              </div></li>
+
+              <li><div class="step-body">
+                <h4>Step 4 — Deploy + verify</h4>
+                <p><strong>Exit:</strong> sandbox URL responding only to authorised SSO sessions; logs flowing to SIEM.</p>
+                <p>Run <code>wrangler deploy</code>. Visit the sandbox URL from a non-corporate browser to confirm the Access challenge fires. Visit it after authenticating to confirm the app responds. In SIEM, confirm <code>cf-access</code> events for both attempts. Tag the deployment with the PR number and the cosign signature digest for traceability.</p>
+              </div></li>
+
+              <li><div class="step-body">
+                <h4>Step 5 — Hand off to security review</h4>
+                <p><strong>Exit:</strong> security reviewer has the URL, the SBOM, and the cosign attestation.</p>
+                <p>Post in the PR: sandbox URL · cosign signature · CycloneDX SBOM (with AI/ML extension) · evaluation harness output (if applicable). Stage 4 (security review) of the Promotion Runbook starts here.</p>
+                <a class="step-link" href="templates/AI-Built-App-Promotion-Runbook-v1.0.docx" download>↓ Promotion Runbook (Stage 4 sign-off form)</a>
+              </div></li>
+            </ol>
+          </div>
+
+          <!-- Docker Compose -->
+          <div class="guide-panel" id="g-sb-docker">
+            <ol class="steps-list">
+              <li><div class="step-body">
+                <h4>Step 1 — Prerequisites</h4>
+                <p><strong>Owner:</strong> Platform Engineering.&nbsp; <strong>Exit:</strong> isolated host with Docker 24+, kernel 5.8+ (for capability-based hardening), reachable only from the corporate VPN.</p>
+                <p>Provision a dedicated VM in a non-production VPC. Apply your standard Linux baseline. Install Docker Engine + Compose v2. Confirm <code>docker compose version</code> reports 2.20+. Open inbound 443 from the corporate VPN range only. Outbound: only the corporate proxy.</p>
+              </div></li>
+
+              <li><div class="step-body">
+                <h4>Step 2 — Customise <code>docker-compose.yml</code></h4>
+                <p><strong>Exit:</strong> <code>docker compose config</code> validates; capabilities and networks match the policy.</p>
+                <p>Open the shipped <code>docker-compose.yml</code>. Verify the AI-app service has <code>read_only: true</code>, <code>cap_drop: [ALL]</code>, <code>security_opt: [no-new-privileges:true]</code>, <code>tmpfs: [/tmp]</code>. Verify the <code>tinyproxy</code> egress firewall is on the only network with internet, and the AI app sits on a network with <code>internal: true</code>. Adjust the egress allow-list inside <code>tinyproxy.conf</code> to your model API + needed registries only.</p>
+                <a class="step-link" href="templates/sandbox/docker-compose.yml" download>↓ docker-compose.yml</a>
+              </div></li>
+
+              <li><div class="step-body">
+                <h4>Step 3 — Build the hardened image</h4>
+                <p><strong>Exit:</strong> image built from the kit's hardened Dockerfile, distroless, non-root, cosign-signed.</p>
+                <p>Use <code>Dockerfile.template</code> as the basis. Multi-stage; final stage <code>gcr.io/distroless/python3-debian12:nonroot</code> (or the equivalent for your runtime). UID 65532. <code>HEALTHCHECK</code> calls the runtime directly, not a shell. Build, push to your registry, sign with <code>cosign sign --yes &lt;ref&gt;</code>. Attach the CycloneDX SBOM with the AI/ML extension as a cosign attestation.</p>
+                <a class="step-link" href="templates/sandbox/Dockerfile.template" download>↓ Dockerfile.template</a>
+              </div></li>
+
+              <li><div class="step-body">
+                <h4>Step 4 — Stand up OAuth2-Proxy in front</h4>
+                <p><strong>Exit:</strong> sandbox URL gated by SSO; only <em>security-reviewers</em> group can reach the AI app.</p>
+                <p>Deploy <code>oauth2-proxy</code> as the front door (already wired into the compose file). Bind to your IdP via OIDC. Redirect URI on the sandbox host. Allowed group: <em>security-reviewers</em>. Audit log forwarded to your SIEM via Vector / Fluent Bit (also already in the compose).</p>
+              </div></li>
+
+              <li><div class="step-body">
+                <h4>Step 5 — Bring it up + verify</h4>
+                <p><strong>Exit:</strong> Falco is observing, egress is bounded, the app is reachable only via SSO.</p>
+                <p>Run <code>docker compose up -d</code>. From a non-VPN host: confirm 401. From a VPN-connected, SSO-authenticated browser: confirm the app responds. Trigger a deliberate egress to a non-allow-listed URL from inside the AI container — confirm tinyproxy denies it AND Falco fires an event in your SIEM. Schedule a 14-day teardown via cron / systemd timer.</p>
+              </div></li>
+
+              <li><div class="step-body">
+                <h4>Step 6 — Hand off to security review</h4>
+                <p><strong>Exit:</strong> security reviewer has the URL, the cosign-signed image reference, the SBOM, and the eval-harness output.</p>
+                <p>Same hand-off as the other patterns — Stage 4 of the Promotion Runbook starts here.</p>
+                <a class="step-link" href="templates/AI-Built-App-Promotion-Runbook-v1.0.docx" download>↓ Promotion Runbook (Stage 4 sign-off form)</a>
+              </div></li>
+            </ol>
+          </div>
+
+          <!-- Kubernetes -->
+          <div class="guide-panel" id="g-sb-k8s">
+            <ol class="steps-list">
+              <li><div class="step-body">
+                <h4>Step 1 — Prerequisites</h4>
+                <p><strong>Owner:</strong> Platform Engineering.&nbsp; <strong>Exit:</strong> non-production cluster, NetworkPolicy-enforcing CNI (Cilium / Calico), Kyverno installed.</p>
+                <p>Use a sandbox-tier cluster (separate from production). Confirm the CNI enforces NetworkPolicy by deploying a default-deny test pod. Install Kyverno: <code>helm repo add kyverno https://kyverno.github.io/kyverno/ &amp;&amp; helm install kyverno kyverno/kyverno -n kyverno --create-namespace</code>. Cluster admin access required for the policy step.</p>
+              </div></li>
+
+              <li><div class="step-body">
+                <h4>Step 2 — Apply Kyverno cluster policies</h4>
+                <p><strong>Exit:</strong> 5 cluster policies enforced; cosign signature verification active.</p>
+                <p>Apply the shipped <code>kyverno-policies.yaml</code>: verify image signatures (cosign keyless against your CI's OIDC subject), deny privileged / host-namespaces / default-SA, require resource limits + non-root + read-only-root, require image digests, harden the default ServiceAccount. Stage-roll the policies as <code>Audit</code> first if you have legacy workloads, then flip to <code>Enforce</code>.</p>
+                <a class="step-link" href="templates/sandbox/k8s/kyverno-policies.yaml" download>↓ kyverno-policies.yaml</a>
+              </div></li>
+
+              <li><div class="step-body">
+                <h4>Step 3 — Customise the Deployment + ServiceAccount + PDB</h4>
+                <p><strong>Exit:</strong> namespace + dedicated SA + Deployment exist; PSS-restricted enforced.</p>
+                <p>Open <code>k8s/deployment.yaml</code>. Replace <code>&lt;your-app&gt;</code>, <code>&lt;your-namespace&gt;</code>, <code>&lt;your-org&gt;</code>, and the <code>@sha256:&lt;DIGEST&gt;</code> of your cosign-signed image. Confirm the namespace label <code>pod-security.kubernetes.io/enforce: restricted</code> is present. Confirm <code>automountServiceAccountToken: false</code> on the SA. Apply.</p>
+                <a class="step-link" href="templates/sandbox/k8s/deployment.yaml" download>↓ deployment.yaml</a>
+              </div></li>
+
+              <li><div class="step-body">
+                <h4>Step 4 — Apply NetworkPolicy</h4>
+                <p><strong>Exit:</strong> default-deny on, only DNS + ingress controller + model API egress allowed.</p>
+                <p>Apply <code>networkpolicy.yaml</code>. Confirm a curl from inside the pod to <code>1.1.1.1:443</code> succeeds (model API range), and to <code>10.0.0.5:6379</code> fails (other in-cluster service). DNS resolution to <code>kube-dns</code> works; everything else inside the cluster is unreachable until you explicitly allow it.</p>
+                <a class="step-link" href="templates/sandbox/k8s/networkpolicy.yaml" download>↓ networkpolicy.yaml</a>
+              </div></li>
+
+              <li><div class="step-body">
+                <h4>Step 5 — SSO at the edge</h4>
+                <p><strong>Exit:</strong> Ingress only via the cluster's authenticating gateway; only <em>security-reviewers</em> group can reach the sandbox URL.</p>
+                <p>Use your existing Ingress controller / service mesh (oauth2-proxy on ingress-nginx, Istio AuthZ, or your IdP-integrated gateway). Bind to the sandbox hostname. Allowed group: <em>security-reviewers</em>. The NetworkPolicy in Step 4 already allows ingress from the gateway namespace only.</p>
+              </div></li>
+
+              <li><div class="step-body">
+                <h4>Step 6 — Verify admission + runtime</h4>
+                <p><strong>Exit:</strong> a tag-only or unsigned image is rejected at admission; runtime detection fires on policy violations.</p>
+                <p>Try <code>kubectl run bad --image=ghcr.io/&lt;your-org&gt;/&lt;your-app&gt;:latest</code> — must fail (digest required, signature not present). Try <code>kubectl run privileged --image=&lt;valid&gt; --privileged</code> — must fail. If you've added Falco / Tetragon (recommended), confirm runtime alerts reach your SIEM. Schedule a TTL-based cleanup of the namespace at 14 days.</p>
+              </div></li>
+
+              <li><div class="step-body">
+                <h4>Step 7 — Hand off to security review</h4>
+                <p><strong>Exit:</strong> security reviewer has the URL, the signed image digest, the SBOM, and the Kyverno admission audit trail.</p>
+                <p>Same hand-off as the other patterns — Stage 4 of the Promotion Runbook starts here.</p>
+                <a class="step-link" href="templates/AI-Built-App-Promotion-Runbook-v1.0.docx" download>↓ Promotion Runbook (Stage 4 sign-off form)</a>
+              </div></li>
+            </ol>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ============ GUIDE 3: SDLC PROMOTION ============ -->
       <div class="guide" id="g-sdlc-guide">
         <div class="guide-head">
           <h3>Promote AI-built apps safely (SDLC)</h3>
@@ -2080,7 +2171,87 @@
     </div>
   </section>
 
-  <!-- CONTROL CATALOGUE -->
+    <!-- PER-TOOL ENFORCEMENT MATRIX (reference) -->
+  <section id="per-tool-section" style="background:var(--surface-2);border-bottom:1px solid var(--border)">
+    <div class="container">
+      <div class="section-head">
+        <div class="kicker">Per AI tool</div>
+        <h2>What enforces what — at a glance</h2>
+        <p>Once you've seen the diagrams above and walked through the deployment guides, this is the reference table to come back to: which AI tool publishes a managed config, which only has admin-side controls, and where the universal controls fill the gap.</p>
+      </div>
+
+      <!-- Per-tool enforcement matrix — addresses "what about Codex / Copilot / Cursor" -->
+      <div class="diagram-card" id="per-tool" style="margin-top:22px">
+        <div class="diagram-head">
+          <h3>What enforces what — per AI tool</h3>
+          <span class="tag">Matrix · honest scope</span>
+        </div>
+        <p class="diagram-desc">Only Anthropic Claude Code publishes a managed-config file format an MDM admin can push to endpoints today. For every other tool, enforcement is vendor admin + per-repo drop-in + OS-level + corporate proxy. The four <strong>universal controls</strong> (Dev Drive / TCC / firejail · proxy egress · app allow-list · pre-flight) apply identically across all of them.</p>
+
+        <div style="overflow-x:auto;margin-top:10px">
+          <table class="crosswalk" style="font-size:12.5px">
+            <thead>
+              <tr>
+                <th>Tool</th>
+                <th>Vendor admin (web)</th>
+                <th>Per-repo drop-in</th>
+                <th>Managed file (MDM-deployable)</th>
+                <th>Universal controls apply</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Anthropic Claude Code</strong></td>
+                <td>docs.anthropic.com → Claude Code IAM</td>
+                <td><code>.claude/settings.json</code></td>
+                <td style="color:#047857;font-weight:600">Yes — managed-settings.json</td>
+                <td>Yes</td>
+              </tr>
+              <tr>
+                <td><strong>GitHub Copilot</strong></td>
+                <td>GitHub Enterprise → Settings → Copilot → Policies</td>
+                <td><code>.github/copilot-instructions.md</code></td>
+                <td style="color:#b45309;font-weight:600">No — admin policies + per-repo file only</td>
+                <td>Yes</td>
+              </tr>
+              <tr>
+                <td><strong>OpenAI Codex CLI</strong></td>
+                <td>platform.openai.com → Project / API keys</td>
+                <td><code>.codex/instructions.md</code></td>
+                <td style="color:#b45309;font-weight:600">No — per-user <code>~/.codex/config.toml</code> only</td>
+                <td>Yes</td>
+              </tr>
+              <tr>
+                <td><strong>Cursor</strong></td>
+                <td>Cursor admin (Business/Enterprise plan)</td>
+                <td><code>.cursorrules</code></td>
+                <td style="color:#b45309;font-weight:600">No — per-user <code>~/.cursor/settings.json</code> only</td>
+                <td>Yes</td>
+              </tr>
+              <tr>
+                <td><strong>ChatGPT desktop</strong></td>
+                <td>OpenAI workspace admin</td>
+                <td>—</td>
+                <td style="color:#dc2626;font-weight:600">No — admin console only</td>
+                <td>Yes</td>
+              </tr>
+              <tr>
+                <td><strong>M365 Copilot</strong></td>
+                <td>Microsoft 365 admin centre + Intune</td>
+                <td>Sensitivity labels per-document</td>
+                <td style="color:#047857;font-weight:600">Yes — Purview / Intune policies</td>
+                <td>Yes</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p style="font-size:13px;color:var(--text-soft);margin-top:14px;line-height:1.65"><strong>The kit ships drop-in templates</strong> for each per-repo file (Copilot instructions, Cursor rules, Codex project instructions) under <code>templates/per-tool/</code>. The four universal controls are governed by <code>endpoint-policy/policy.yaml</code> and apply uniformly to every tool listed above.</p>
+      </div>
+    </div>
+  </section>
+
+<!-- CONTROL CATALOGUE -->
   <section id="controls">
     <div class="container">
       <div class="section-head">
@@ -2173,24 +2344,80 @@
 
       <div class="risks-grid">
         <article class="risk-card r-prompt">
-          <div class="meta">Highest priority · OWASP LLM01</div>
+          <div class="meta">OWASP LLM01 · 2025</div>
           <h3>Prompt Injection</h3>
-          <p>Malicious instructions hidden inside a document, web page, email, or ticket override the user's intent — invisible white-on-white text, encoded HTML, file metadata. Treat every input as potentially adversarial.</p>
+          <p>Malicious instructions hidden inside a document, web page, email, ticket, or RAG corpus override the user's intent. Direct (jailbreaks) and indirect (untrusted content) variants. Treat every input as potentially adversarial.</p>
+          <div class="meta" style="margin-top:8px">Tracked: HRD-G04 · HRD-M03 · HRD-M11</div>
         </article>
+
         <article class="risk-card r-leak">
-          <div class="meta">Critical · OWASP LLM02</div>
-          <h3>Data Leakage</h3>
-          <p>Pasting customer PII, credentials, or proprietary code into AI tools. Even with training disabled, content traverses third-party infrastructure. Default to "treat AI like a public URL".</p>
+          <div class="meta">OWASP LLM02 · 2025</div>
+          <h3>Sensitive Information Disclosure</h3>
+          <p>Pasting customer PII, credentials, IP or proprietary code into AI tools. Even with training disabled, content traverses third-party infrastructure. RAG retrieval that ignores user ACLs leaks data sideways. Default: "treat AI like a public URL".</p>
+          <div class="meta" style="margin-top:8px">Tracked: HRD-A02 · HRD-H01 · HRD-M04 · HRD-M06</div>
         </article>
-        <article class="risk-card r-bias">
-          <div class="meta">Material · NIST MEASURE-2.11</div>
-          <h3>Bias &amp; Over-Reliance</h3>
-          <p>Models reflect their training data. Decisions about people — hiring, credit, fraud — must have documented human oversight, fairness testing, and the ability to override.</p>
-        </article>
+
         <article class="risk-card r-supply">
-          <div class="meta">Strategic · OWASP LLM03</div>
-          <h3>Supply Chain &amp; Agentic Authority</h3>
-          <p>Agents inherit the user's permissions. Connectors, plugins, MCP servers, and scheduled tasks can act for hours without supervision. The attack scenario is no longer "data disclosed" — it's "workflow executed".</p>
+          <div class="meta">OWASP LLM03 · 2025</div>
+          <h3>Supply Chain</h3>
+          <p>Compromised model weights, poisoned datasets, malicious connectors / plugins / MCP servers, dependency attacks on the model serving stack. Treat the model and its plugins as third-party code with attestation requirements equal to OS-level dependencies.</p>
+          <div class="meta" style="margin-top:8px">Tracked: HRD-B01 · HRD-C01 · HRD-E01 · HRD-L02 · HRD-L06</div>
+        </article>
+
+        <article class="risk-card r-poison">
+          <div class="meta">OWASP LLM04 · 2025</div>
+          <h3>Data and Model Poisoning</h3>
+          <p>Adversarial training data, fine-tune corpora, or RAG sources designed to bias outputs, embed back-doors, or trigger unsafe behaviour on specific inputs. Mitigation: signed datasets, provenance tracking, eval harness for poisoning probes.</p>
+          <div class="meta" style="margin-top:8px">Tracked: HRD-L06 · HRD-M02 · HRD-M14</div>
+        </article>
+
+        <article class="risk-card r-output">
+          <div class="meta">OWASP LLM05 · 2025</div>
+          <h3>Improper Output Handling</h3>
+          <p>Unfiltered LLM output rendered into HTML, executed as SQL, passed to a shell, or trusted as a tool argument — classic XSS / SSRF / command injection enabled by treating model output as trusted. Always validate, escape, and sanitise downstream.</p>
+          <div class="meta" style="margin-top:8px">Tracked: HRD-M07 · HRD-M08 · HRD-M09</div>
+        </article>
+
+        <article class="risk-card r-agency">
+          <div class="meta">OWASP LLM06 · 2025</div>
+          <h3>Excessive Agency</h3>
+          <p>Agents inherit the user's permissions. Connectors, plugins, MCP servers and scheduled tasks can act for hours without supervision. The attack scenario is no longer "data disclosed" — it's "workflow executed". Tool allow-lists, argument validation, human-in-the-loop and iteration caps are non-optional.</p>
+          <div class="meta" style="margin-top:8px">Tracked: HRD-A04 · HRD-J01 · HRD-M10 · HRD-M11</div>
+        </article>
+
+        <article class="risk-card r-prompt-leak">
+          <div class="meta">OWASP LLM07 · 2025</div>
+          <h3>System Prompt Leakage</h3>
+          <p>System prompts often encode policy, secrets, or business logic that the model treats as authoritative. Extraction attacks (jailbreaks, role-play, encoding tricks) reveal them. Treat system prompts as version-controlled, reviewed code; never put real secrets in them.</p>
+          <div class="meta" style="margin-top:8px">Tracked: HRD-M05</div>
+        </article>
+
+        <article class="risk-card r-vector">
+          <div class="meta">OWASP LLM08 · 2025</div>
+          <h3>Vector and Embedding Weaknesses</h3>
+          <p>Vector databases that index without ACL boundaries leak via similarity search. Embedding inversion can recover near-original text. Embedding-poisoning attacks plant retrieval traps. Mitigation: per-user ACL indexes, embedding-model + version pinning, daily reconciliation.</p>
+          <div class="meta" style="margin-top:8px">Tracked: HRD-M06</div>
+        </article>
+
+        <article class="risk-card r-misinfo">
+          <div class="meta">OWASP LLM09 · 2025</div>
+          <h3>Misinformation &amp; Hallucination</h3>
+          <p>Models confidently produce wrong facts, citations and code. In high-impact settings — clinical, legal, financial, code that ships to production — unverified output is a safety issue, not a quality issue. Cite-then-summarise, groundedness scoring, human review at decision points.</p>
+          <div class="meta" style="margin-top:8px">Tracked: HRD-M07 · HRD-M08 · HRD-M14</div>
+        </article>
+
+        <article class="risk-card r-consumption">
+          <div class="meta">OWASP LLM10 · 2025</div>
+          <h3>Unbounded Consumption (Denial-of-Wallet)</h3>
+          <p>Token-by-token billing turns a runaway agent or an abusive user into an instant five-figure cloud bill. Per-tenant rate limits, daily token + cost caps, anomaly detection on call-rate / context-size, hard kill at 100% budget. Pair with LLM06 controls — agent loops are the highest-risk amplifier.</p>
+          <div class="meta" style="margin-top:8px">Tracked: HRD-M12</div>
+        </article>
+
+        <article class="risk-card r-bias">
+          <div class="meta">Cross-cutting · NIST MEASURE-2.11 · EU AI Act Art. 10</div>
+          <h3>Bias &amp; Over-Reliance</h3>
+          <p>Not in OWASP LLM Top 10 but unavoidable in regulated estates. Models reflect their training data. Decisions about people — hiring, credit, fraud, healthcare — require documented human oversight, fairness testing, demographic parity / equalised-odds scoring, and the ability to override.</p>
+          <div class="meta" style="margin-top:8px">Tracked: HRD-M02 · HRD-M11</div>
         </article>
       </div>
     </div>
