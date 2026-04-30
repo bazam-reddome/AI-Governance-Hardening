@@ -1,0 +1,115 @@
+# =============================================================================
+# Semgrep rules for AI-specific failure modes
+# =============================================================================
+# Catches the predictable mistakes AI coding tools make that get past tests.
+# Combine with semgrep registry packs: p/llm-security, p/security-audit.
+#
+# Run locally: semgrep --config=semgrep-ai-rules.yml .
+# =============================================================================
+rules:
+  - id: ai-placeholder-secret
+    pattern-either:
+      - pattern: |
+          $X = "YOUR_API_KEY_HERE"
+      - pattern: |
+          $X = "your-api-key"
+      - pattern: |
+          $X = "REPLACE_ME"
+      - pattern: |
+          $X = "TODO_REPLACE"
+      - pattern: |
+          $X = "changeme"
+    message: AI-style placeholder secret left in code.
+    languages: [python, javascript, typescript, go, java]
+    severity: ERROR
+
+  - id: ai-tls-verify-disabled
+    pattern-either:
+      - pattern: requests.get(..., verify=False)
+      - pattern: requests.post(..., verify=False)
+      - pattern: requests.request(..., verify=False, ...)
+      - pattern: |
+          $X = httpx.Client(verify=False, ...)
+    message: TLS verification disabled — AI tools occasionally do this to "make it work". Never ship.
+    languages: [python]
+    severity: ERROR
+
+  - id: ai-jwt-alg-none
+    patterns:
+      - pattern-either:
+        - pattern: jwt.decode(..., verify=False, ...)
+        - pattern: jwt.decode(..., options={"verify_signature": False}, ...)
+        - pattern: jwt.decode(..., algorithms=["none"], ...)
+    message: JWT signature verification disabled — auth bypass risk.
+    languages: [python, javascript]
+    severity: ERROR
+
+  - id: ai-eval-on-input
+    pattern-either:
+      - pattern: eval($X)
+      - pattern: exec($X)
+      - pattern: Function($X)(...)
+      - pattern: new Function($X)
+    message: eval/exec on possibly-tainted input. AI sometimes reaches for this when stumped.
+    languages: [python, javascript]
+    severity: ERROR
+
+  - id: ai-shell-true
+    pattern-either:
+      - pattern: subprocess.run(..., shell=True, ...)
+      - pattern: subprocess.call(..., shell=True, ...)
+      - pattern: subprocess.Popen(..., shell=True, ...)
+      - pattern: os.system(...)
+    message: shell=True on user-controlled input is RCE-prone. Use a list of args instead.
+    languages: [python]
+    severity: WARNING
+
+  - id: ai-tautological-test
+    pattern-either:
+      - pattern: |
+          assert $X == $X
+      - pattern: |
+          expect($X).toBe($X)
+    message: Tautological assertion — AI-generated test that proves nothing.
+    languages: [python, javascript, typescript]
+    severity: WARNING
+
+  - id: ai-cors-wildcard
+    pattern-either:
+      - pattern: |
+          $RESP.headers["Access-Control-Allow-Origin"] = "*"
+      - pattern: |
+          response.headers.set("Access-Control-Allow-Origin", "*")
+    message: CORS wildcard. AI tools default to this. Lock down to specific origins in prod.
+    languages: [python, javascript, typescript]
+    severity: WARNING
+
+  - id: ai-debug-true-prod
+    pattern-either:
+      - pattern: app.run(..., debug=True, ...)
+      - pattern: |
+          DEBUG = True
+    message: debug=True looks fine in dev — make sure it's gated by env in prod.
+    languages: [python]
+    severity: WARNING
+
+  - id: ai-prompt-injection-concat
+    patterns:
+      - pattern-either:
+        - pattern: |
+            f"You are an assistant... {$USER_INPUT}"
+        - pattern: |
+            "You are an assistant" + $USER_INPUT
+    message: User input concatenated into a system-prompt-shaped string — possible prompt injection. Use structured messages, not concatenation.
+    languages: [python]
+    severity: ERROR
+
+  - id: ai-unbounded-llm-tools
+    patterns:
+      - pattern-either:
+        - pattern: tools = $TOOLS
+      - pattern-not: |
+          tools = $TOOLS  # rate-limited / scoped
+    message: Agent tools defined without an obvious rate-limit / scope. Verify each tool has a kill-switch.
+    languages: [python]
+    severity: INFO

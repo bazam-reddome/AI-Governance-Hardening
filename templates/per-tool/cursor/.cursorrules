@@ -1,0 +1,82 @@
+# [Organization Name] — Cursor project rules
+#
+# Drop this file at the root of every repository. Cursor reads it on every
+# session and treats its contents as standing instructions for the AI agents
+# (Composer, Cmd-K edits, agent mode).
+#
+# Replace [Organization Name] and adapt the stack-specific section before
+# publishing.
+
+# =============================================================================
+# Hard rules — never violate
+# =============================================================================
+- Never include real secrets in code, comments, tests, docs, or commit
+  messages. Use ${ENV_VAR_NAME} placeholders and a comment naming the env var.
+- Never disable TLS, signature, or certificate verification in production code
+  (no verify=False, rejectUnauthorized: false, --insecure flags).
+- Never use eval / exec / Function() / os.system on user-controlled input.
+  Always parameterise.
+- Never weaken auth / authz checks "to make it work". Auth on every non-public
+  route; authorisation checked per request.
+- Never default CORS to "*" in production code.
+- Never write code that bulk-deletes, modifies, or exfiltrates data without
+  explicit user confirmation.
+- Never auto-install dependencies with --force, --no-audit, or
+  --ignore-engines flags.
+- Never run shell commands outside the working folder. Never sudo. Never
+  modify files in ~/.ssh, ~/.aws, ~/.kube, ~/.config.
+
+# =============================================================================
+# Generation defaults
+# =============================================================================
+- Prefer the standard library over a new dependency for trivial functionality.
+- When suggesting a new dependency, pick one with active maintenance, no
+  high-severity CVEs in the last 12 months, and a permissive licence
+  (MIT / Apache-2.0 / BSD).
+- Pin versions in lockfiles. No "*" or "latest" ranges in production manifests.
+- Use parameterised SQL queries. No string concatenation.
+- Set explicit timeouts on every outbound HTTP call.
+- Use the cryptographic RNG for security-relevant randomness.
+
+# =============================================================================
+# Test defaults
+# =============================================================================
+- Tests must actually exercise the function under test. No tautological
+  assertions like expect(x).toBe(x) or assert True.
+- Cover edge cases: empty inputs, very large inputs, malicious inputs.
+- Mock external services. Do not hit real APIs in unit tests.
+
+# =============================================================================
+# Refusal triggers
+# =============================================================================
+If a request is for code that disables a security control, includes a real
+credential, scrapes data without permission, bypasses an auth check, or
+otherwise harms the user or others — refuse and offer a safe alternative.
+
+# =============================================================================
+# Project stack — edit per repo
+# =============================================================================
+- Language:    [primary language and version]
+- Framework:   [framework and version]
+- Test runner: [vitest / pytest / junit / etc.]
+- Linter:      [eslint / ruff / golangci-lint / etc.]
+- Type checker:[tsc --strict / mypy --strict / pyright / etc.]
+- Style guide: [link]
+- Forbidden:   [packages banned by Legal / Security]
+
+# =============================================================================
+# Commit conventions
+# =============================================================================
+- Conventional Commits: feat / fix / docs / refactor / chore / test / ci.
+- Subject line ≤ 72 chars.
+- For materially AI-assisted changes, include the trailer:
+    Co-Authored-By: Cursor <[email protected]>
+  (the kit's pre-commit hook detects this and routes the PR for senior
+  reviewer approval).
+
+# =============================================================================
+# MCP servers
+# =============================================================================
+- Use only the MCP servers in the org's allow-list. Do not install community
+  MCP servers locally without security review and signing.
+- The allow-list URL is published at: https://aigov.[Organization Name].com/mcp-allowlist.json

@@ -1,0 +1,2804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="Open-source AI governance, risk, and hardening templates. Aligned to NIST AI RMF, ISO/IEC 42001, EU AI Act, OWASP LLM Top 10 (2025), and MITRE ATLAS. Free templates and an interactive maturity self-assessment for organisations adopting AI safely." />
+<meta name="theme-color" content="#ffffff" />
+<title>AI Governance &amp; Hardening Project — Open-Source Templates &amp; Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha512-XMVd28F1oH/O71fzwBnV7HucLxVwtxf26XV8P4wPk26EDxuGZ91N8bsOttmnomcCD3CS5ZMRL50H0GgOHvegtg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230f172a'/%3E%3Crect x='10' y='10' width='44' height='44' rx='8' fill='none' stroke='%23475569' stroke-width='2'/%3E%3Ctext x='50%25' y='56%25' text-anchor='middle' font-family='Inter, system-ui' font-size='26' font-weight='800' letter-spacing='-1' fill='%23ffffff'%3EAI%3C/text%3E%3Ccircle cx='52' cy='12' r='4' fill='%23dc2626'/%3E%3C/svg%3E" />
+<style>
+  :root{
+    --bg:#ffffff;
+    --surface:#ffffff;
+    --surface-2:#f8fafc;          /* slate-50 */
+    --surface-3:#f1f5f9;          /* slate-100 */
+    --border:#e2e8f0;             /* slate-200 */
+    --border-strong:#cbd5e1;       /* slate-300 */
+
+    --slate-900:#0f172a;
+    --slate-700:#334155;
+    --slate-500:#64748b;
+    --slate-400:#94a3b8;
+
+    --red:#dc2626;                /* primary brand accent */
+    --red-2:#b91c1c;
+    --red-50:#fef2f2;
+    --amber:#f59e0b;
+    --amber-50:#fffbeb;
+    --emerald:#10b981;
+    --emerald-50:#ecfdf5;
+    --blue:#2563eb;
+    --blue-50:#eff6ff;
+
+    --text:#0f172a;
+    --text-soft:#334155;
+    --text-muted:#64748b;
+
+    --shadow-card:0 1px 2px rgba(15,23,42,.04), 0 12px 32px -16px rgba(15,23,42,.08);
+
+    --r-sm:6px; --r-md:10px; --r-lg:16px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;background:var(--bg)}
+  body{
+    margin:0;
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    color:var(--text);
+    background:var(--bg);
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--red);text-decoration:none;transition:color .15s ease}
+  a:hover{color:var(--red-2)}
+
+  h1,h2,h3,h4,h5{font-family:'Inter',sans-serif;color:var(--slate-900);font-weight:700;letter-spacing:-.02em}
+  h1{font-weight:800;letter-spacing:-.035em}
+  .mono{font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+
+  /* Top bar */
+  .topbar{
+    position:sticky;top:0;z-index:50;
+    background:rgba(255,255,255,.92);
+    backdrop-filter:saturate(160%) blur(12px);
+    -webkit-backdrop-filter:saturate(160%) blur(12px);
+    border-bottom:1px solid var(--border);
+  }
+  .topbar-inner{max-width:1200px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:24px}
+  .brand{display:flex;align-items:center;gap:12px;font-weight:700;color:var(--text);font-size:16px;letter-spacing:-.015em}
+  .brand-mark{
+    width:32px;height:32px;border-radius:8px;
+    background:var(--slate-900);
+    color:#fff;display:grid;place-items:center;
+    font-weight:800;font-size:13px;letter-spacing:-.04em;
+    position:relative;
+  }
+  .brand-mark::after{
+    content:"";position:absolute;top:5px;right:5px;
+    width:5px;height:5px;border-radius:50%;background:var(--red);
+  }
+  .nav{display:flex;gap:4px;flex:1;flex-wrap:wrap}
+  .nav a{
+    padding:8px 14px;border-radius:var(--r-sm);color:var(--text-soft);
+    font-size:14px;font-weight:500;
+  }
+  .nav a:hover{background:var(--surface-3);color:var(--text);text-decoration:none}
+  .topbar-cta{
+    background:var(--red);color:#fff;padding:9px 18px;border-radius:var(--r-sm);
+    font-size:14px;font-weight:600;letter-spacing:-.005em;
+  }
+  .topbar-cta:hover{background:var(--red-2);text-decoration:none;color:#fff}
+
+  /* Hero */
+  .hero{padding:80px 24px 64px;border-bottom:1px solid var(--border)}
+  .hero-inner{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1.4fr 1fr;gap:56px;align-items:center}
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:10px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--text-muted);padding:6px 0;margin-bottom:20px;
+  }
+  .eyebrow .dot{width:7px;height:7px;background:var(--red);border-radius:50%}
+  h1{font-size:54px;line-height:1.06;margin:0 0 20px}
+  h1 span.accent{color:var(--red)}
+  .lede{font-size:18px;color:var(--text-soft);max-width:640px;margin:0 0 28px;line-height:1.65}
+  .hero-cta{display:flex;gap:12px;flex-wrap:wrap}
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:13px 22px;border-radius:var(--r-sm);
+    font-weight:600;font-size:15px;border:none;cursor:pointer;
+    font-family:'Inter',sans-serif;letter-spacing:-.005em;
+    transition:transform .15s ease, background .15s ease, border-color .15s ease;
+  }
+  .btn-primary{background:var(--red);color:#fff}
+  .btn-primary:hover{background:var(--red-2);text-decoration:none;color:#fff;transform:translateY(-1px)}
+  .btn-ghost{background:transparent;color:var(--text);border:1px solid var(--border-strong)}
+  .btn-ghost:hover{border-color:var(--slate-500);background:var(--surface-3);text-decoration:none;color:var(--text)}
+
+  .hero-art{
+    background:var(--surface-2);
+    border:1px solid var(--border);
+    border-radius:var(--r-lg);padding:24px;
+    box-shadow:var(--shadow-card);
+  }
+  .hero-art-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;font-weight:500;color:var(--text-muted);letter-spacing:.22em;text-transform:uppercase;margin-bottom:18px;
+  }
+  .frameworks{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+  .framework-pill{
+    background:#fff;border:1px solid var(--border);border-radius:var(--r-sm);
+    padding:11px 14px;display:flex;align-items:center;gap:10px;
+    transition:border-color .2s ease;
+  }
+  .framework-pill:hover{border-color:var(--border-strong)}
+  .framework-pill .badge{
+    color:var(--red);font-weight:600;font-size:10px;letter-spacing:.08em;
+    font-family:'JetBrains Mono',monospace;min-width:42px;
+  }
+  .framework-pill span:last-child{font-size:13px;color:var(--text);font-weight:500}
+  .hero-art p{font-size:12px;color:var(--text-muted);margin:18px 0 0;line-height:1.55}
+
+  /* Stats */
+  .stats{
+    max-width:1200px;margin:0 auto;
+    padding:36px 24px;
+    display:grid;grid-template-columns:repeat(4,1fr);gap:18px;
+  }
+  .stat{
+    background:var(--surface-2);
+    border:1px solid var(--border);border-radius:var(--r-md);padding:22px;
+  }
+  .stat .num{
+    font-size:40px;font-weight:800;line-height:1;margin-bottom:8px;letter-spacing:-.04em;color:var(--slate-900);
+  }
+  .stat .lbl{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;color:var(--text-muted);font-weight:500;letter-spacing:.12em;text-transform:uppercase;
+  }
+
+  /* Section */
+  section{padding:80px 24px;border-top:1px solid var(--border)}
+  .container{max-width:1200px;margin:0 auto}
+  .section-head{margin-bottom:36px;max-width:840px}
+  .kicker{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--red);font-weight:600;margin-bottom:12px;
+  }
+  h2{font-size:36px;line-height:1.12;margin:0 0 14px}
+  h3{font-size:18px;line-height:1.3;margin:0 0 8px;color:var(--slate-900)}
+  h4{font-size:14px;line-height:1.4;margin:0 0 6px;color:var(--slate-900)}
+  .section-head p{font-size:17px;color:var(--text-soft);margin:0;line-height:1.65}
+
+  /* "What's inside" overview at the top of the page */
+  .getting-started{background:var(--surface-2);border-bottom:1px solid var(--border)}
+  .overview-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:8px}
+  .overview-card{
+    background:#fff;border:1px solid var(--border);border-radius:var(--r-md);
+    padding:18px;display:flex;flex-direction:column;gap:6px;
+    text-decoration:none;color:inherit;
+    transition:border-color .15s ease, transform .15s ease, box-shadow .15s ease;
+  }
+  .overview-card:hover{
+    border-color:var(--red);transform:translateY(-1px);
+    box-shadow:var(--shadow-card);text-decoration:none;
+  }
+  .overview-card .ord{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;color:var(--red);letter-spacing:.18em;font-weight:600;
+  }
+  .overview-card h3{font-size:15px;margin:0;color:var(--slate-900);font-weight:600}
+  .overview-card .lede{font-size:12.5px;color:var(--text-muted);margin:0;line-height:1.55;flex:1}
+  .overview-card .arrow{
+    color:var(--red);font-size:13px;margin-top:6px;
+    font-family:'JetBrains Mono',monospace;letter-spacing:.04em;font-weight:500;
+  }
+  .overview-card.is-primary{border-color:var(--red);background:#fff}
+  .overview-card.is-primary::before{
+    content:"START HERE";display:inline-block;
+    font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;letter-spacing:.18em;
+    background:var(--red);color:#fff;padding:2px 6px;border-radius:3px;align-self:flex-start;margin-bottom:4px;
+  }
+
+  /* Templates */
+  .templates-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+  .template-card{
+    background:#fff;border:1px solid var(--border);border-radius:var(--r-lg);
+    padding:24px;display:flex;flex-direction:column;gap:14px;
+    transition:transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+    position:relative;overflow:hidden;
+  }
+  .template-card::before{
+    content:"";position:absolute;top:0;left:0;width:3px;height:100%;
+    background:var(--red);opacity:0;transition:opacity .25s ease;
+  }
+  .template-card:hover{
+    transform:translateY(-2px);border-color:var(--border-strong);
+    box-shadow:var(--shadow-card);
+  }
+  .template-card:hover::before{opacity:1}
+  .template-card .ribbon{
+    display:inline-flex;align-items:center;gap:8px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;font-weight:500;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--red);align-self:flex-start;
+  }
+  .template-card .desc{font-size:14px;color:var(--text-soft);flex:1;line-height:1.65}
+  .template-card ul{margin:0;padding-left:18px;font-size:13px;color:var(--text-muted);line-height:1.7}
+  .template-card ul li::marker{color:var(--red)}
+  .template-card .actions{display:flex;gap:10px;margin-top:6px;align-items:center}
+  .template-card .filetype{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;font-weight:500;color:var(--text-muted);
+    padding:4px 8px;border-radius:4px;letter-spacing:.18em;
+    border:1px solid var(--border);
+  }
+
+  /* Controls table */
+  .controls-toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;align-items:center}
+  .search{
+    flex:1;min-width:220px;max-width:380px;
+    padding:10px 14px;
+    background:#fff;border:1px solid var(--border-strong);
+    border-radius:var(--r-sm);
+    font-size:14px;font-family:'Inter',sans-serif;color:var(--text);
+  }
+  .search::placeholder{color:var(--text-muted)}
+  .search:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 3px rgba(220,38,38,.12)}
+  .filter-pill{
+    padding:7px 14px;border:1px solid var(--border-strong);
+    background:#fff;color:var(--text-soft);border-radius:999px;
+    font-size:12px;cursor:pointer;font-weight:500;
+    font-family:'JetBrains Mono',monospace;letter-spacing:.06em;
+    transition:all .15s ease;
+  }
+  .filter-pill:hover{border-color:var(--slate-500);color:var(--text)}
+  .filter-pill.active{background:var(--red);color:#fff;border-color:var(--red)}
+
+  table.controls,table.crosswalk{
+    width:100%;border-collapse:collapse;
+    background:#fff;border:1px solid var(--border);
+    border-radius:var(--r-md);overflow:hidden;font-size:13px;
+  }
+  table.controls thead,table.crosswalk thead{background:var(--surface-3)}
+  table.controls th,table.crosswalk th{
+    padding:12px 14px;text-align:left;font-weight:500;font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+    font-family:'JetBrains Mono',monospace;color:var(--text-muted);
+    border-bottom:1px solid var(--border);
+  }
+  table.controls td,table.crosswalk td{padding:13px 14px;border-top:1px solid var(--border);vertical-align:top;color:var(--text-soft)}
+  table.controls td:first-child,table.crosswalk td:first-child{color:var(--text)}
+  table.controls tr:hover td,table.crosswalk tr:hover td{background:var(--surface-2)}
+  .control-id{font-weight:500;color:var(--red);font-family:'JetBrains Mono',monospace;font-size:12px}
+  .badge-list{display:flex;flex-wrap:wrap;gap:5px}
+  .badge{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;font-weight:500;padding:2px 7px;border-radius:4px;
+    background:#fff;color:var(--text-muted);white-space:nowrap;
+    border:1px solid var(--border);letter-spacing:.05em;
+  }
+  .badge-owasp{color:var(--red);border-color:#fecaca;background:var(--red-50)}
+  .badge-nist{color:var(--blue);border-color:#bfdbfe;background:var(--blue-50)}
+  .badge-iso{color:#047857;border-color:#a7f3d0;background:var(--emerald-50)}
+  .badge-mitre{color:#b45309;border-color:#fde68a;background:var(--amber-50)}
+  .badge-prio-P1{color:var(--red);border-color:#fecaca;background:var(--red-50)}
+  .badge-prio-P2{color:#b45309;border-color:#fde68a;background:var(--amber-50)}
+  .badge-prio-P3{color:var(--blue);border-color:#bfdbfe;background:var(--blue-50)}
+  .badge-prio-P4{color:var(--text-muted)}
+
+  /* Self-assessment */
+  .assessment{
+    background:#fff;border:1px solid var(--border);border-radius:var(--r-lg);
+    padding:24px;margin-top:22px;
+  }
+  .assess-question{
+    padding:16px 0;border-top:1px solid var(--border);
+    display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;
+  }
+  .assess-question:first-of-type{border-top:none;padding-top:6px}
+  .assess-question .qbody{font-size:14px;color:var(--text)}
+  .assess-question .qbody strong{color:var(--red);font-family:'JetBrains Mono',monospace;font-size:12px}
+  .assess-question .qbody small{display:block;color:var(--text-muted);font-size:11px;margin-top:3px;font-family:'JetBrains Mono',monospace}
+  .assess-options{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+  .assess-options label{
+    padding:6px 12px;background:#fff;border:1px solid var(--border-strong);
+    border-radius:var(--r-sm);font-size:12px;cursor:pointer;font-weight:500;color:var(--text-soft);
+    transition:all .12s ease;
+  }
+  .assess-options label:hover{border-color:var(--slate-500);color:var(--text)}
+  .assess-options input{display:none}
+  .assess-options label.sel-imp{background:var(--emerald);color:#fff;border-color:var(--emerald)}
+  .assess-options label.sel-par{background:var(--amber);color:#fff;border-color:var(--amber)}
+  .assess-options label.sel-no{background:var(--red);color:#fff;border-color:var(--red)}
+  .assess-options label.sel-na{background:var(--surface-3);color:var(--text);border-color:var(--border-strong)}
+
+  .score-card{
+    background:#fff;border:1px solid var(--border);border-radius:var(--r-lg);
+    padding:28px;
+    display:grid;grid-template-columns:1fr 1.6fr;gap:32px;align-items:center;
+    margin-bottom:18px;position:relative;overflow:hidden;
+    box-shadow:var(--shadow-card);
+  }
+  .score-card::before{
+    content:"";position:absolute;top:0;left:0;width:3px;height:100%;
+    background:linear-gradient(180deg,var(--red),var(--amber),var(--emerald));
+  }
+  .score-display{text-align:center}
+  .score-display .num{font-size:64px;font-weight:800;line-height:1;letter-spacing:-.05em;color:var(--slate-900)}
+  .score-display .pct{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;margin-top:6px;color:var(--text-muted);letter-spacing:.22em;text-transform:uppercase;
+  }
+  .score-bar{height:8px;background:var(--surface-3);border-radius:999px;overflow:hidden;margin-top:14px;border:1px solid var(--border)}
+  .score-bar-fill{height:100%;background:var(--red);border-radius:999px;transition:width .4s ease, background .4s ease}
+  .score-meta{font-size:14px;line-height:1.7;color:var(--text-soft)}
+  .score-meta strong{display:block;font-size:20px;margin-bottom:6px;color:var(--slate-900);font-weight:700;letter-spacing:-.02em}
+  .score-actions{display:flex;gap:10px;margin-top:16px}
+  .btn-on-purple{
+    background:transparent;color:var(--text);
+    padding:9px 16px;border-radius:var(--r-sm);
+    font-family:'Inter',sans-serif;font-weight:600;font-size:13px;
+    border:1px solid var(--border-strong);cursor:pointer;
+    transition:all .15s ease;
+  }
+  .btn-on-purple:hover{background:var(--surface-3);text-decoration:none;color:var(--text);border-color:var(--slate-500)}
+
+  /* Risks */
+  .risks-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+  .risk-card{
+    background:#fff;border:1px solid var(--border);border-radius:var(--r-md);padding:22px;
+    border-left:3px solid var(--text-muted);transition:transform .2s ease, border-color .2s ease;
+  }
+  .risk-card:hover{transform:translateY(-2px)}
+  .risk-card.r-prompt{border-left-color:var(--red)}
+  .risk-card.r-leak{border-left-color:var(--amber)}
+  .risk-card.r-bias{border-left-color:var(--emerald)}
+  .risk-card.r-supply{border-left-color:var(--blue)}
+  .risk-card .meta{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;color:var(--text-muted);margin-bottom:6px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;
+  }
+  .risk-card p{font-size:13px;color:var(--text-soft);margin:0;line-height:1.65}
+
+  /* About */
+  .about-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .about-card{
+    background:#fff;border:1px solid var(--border);border-radius:var(--r-md);padding:22px;
+    transition:border-color .2s ease;
+  }
+  .about-card:hover{border-color:var(--border-strong)}
+  .about-card .icon{
+    width:36px;height:36px;border-radius:8px;
+    background:var(--red-50);border:1px solid #fecaca;color:var(--red);
+    display:grid;place-items:center;
+    font-family:'JetBrains Mono',monospace;font-weight:600;font-size:13px;margin-bottom:12px;
+  }
+  .about-card p{color:var(--text-soft);font-size:14px;line-height:1.65}
+
+  .callout{
+    margin-top:28px;padding:24px;
+    background:#fff;border:1px solid var(--border);border-left:3px solid var(--red);border-radius:var(--r-md);
+  }
+  .callout h3{color:var(--slate-900);margin-bottom:8px}
+  .callout p{color:var(--text-soft);font-size:14px;margin:0;line-height:1.65}
+
+  footer{
+    background:var(--surface-2);color:var(--text-soft);padding:48px 24px 28px;
+    border-top:1px solid var(--border);
+  }
+  footer .container{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:2fr 1fr 1fr;gap:40px}
+  footer h4{
+    font-family:'JetBrains Mono',monospace;
+    color:var(--text-muted);margin-bottom:14px;font-size:10px;letter-spacing:.22em;text-transform:uppercase;font-weight:500;
+  }
+  footer p, footer a, footer li{color:var(--text-muted);font-size:14px}
+  footer ul{list-style:none;padding:0;margin:0}
+  footer ul li{margin-bottom:6px}
+  footer a:hover{color:var(--red)}
+  .copyright{
+    max-width:1200px;margin:30px auto 0;padding-top:22px;
+    border-top:1px solid var(--border);color:var(--text-muted);font-size:11px;
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;
+    font-family:'JetBrains Mono',monospace;letter-spacing:.08em;
+  }
+
+  /* Flow diagrams */
+  .diagrams-stack{display:flex;flex-direction:column;gap:22px}
+  .diagram-card{
+    background:#fff;border:1px solid var(--border);border-radius:var(--r-lg);
+    padding:28px 28px 24px;
+  }
+  .diagram-head{
+    display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;
+    margin-bottom:6px;
+  }
+  .diagram-head h3{font-size:18px;margin:0;color:var(--slate-900);font-weight:600}
+  .diagram-head .tag{
+    font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-muted);
+    letter-spacing:.18em;text-transform:uppercase;
+  }
+  .diagram-card .diagram-desc{
+    font-size:14px;color:var(--text-soft);margin:0 0 18px;line-height:1.65;max-width:780px;
+  }
+  .diagram-svg{
+    display:block;width:100%;max-width:1000px;margin:0 auto;height:auto;
+  }
+  .diagram-svg .b-fill{fill:#fff}
+  .diagram-svg .b-fill-dark{fill:var(--slate-900)}
+  .diagram-svg .b-stroke{stroke:var(--slate-900);stroke-width:1.5;fill:none}
+  .diagram-svg .b-fill-red{fill:var(--red-50)}
+  .diagram-svg .b-fill-amber{fill:#fffbeb}
+  .diagram-svg .b-fill-emerald{fill:#ecfdf5}
+  .diagram-svg .b-fill-blue{fill:#eff6ff}
+  .diagram-svg .b-fill-slate{fill:#f1f5f9}
+  .diagram-svg .s-red{stroke:var(--red);stroke-width:1.5}
+  .diagram-svg .s-amber{stroke:var(--amber);stroke-width:1.5}
+  .diagram-svg .s-emerald{stroke:var(--emerald);stroke-width:1.5}
+  .diagram-svg .s-blue{stroke:var(--blue);stroke-width:1.5}
+  .diagram-svg .s-slate{stroke:var(--slate-700);stroke-width:1.25}
+  .diagram-svg .t-dark{fill:var(--slate-900);font-family:'Inter',sans-serif;font-weight:600;font-size:13px}
+  .diagram-svg .t-light{fill:#fff;font-family:'Inter',sans-serif;font-weight:600;font-size:13px}
+  .diagram-svg .t-red{fill:var(--red);font-family:'JetBrains Mono',monospace;font-weight:600;font-size:10px;letter-spacing:.1em}
+  .diagram-svg .t-amber{fill:#b45309;font-family:'JetBrains Mono',monospace;font-weight:600;font-size:10px;letter-spacing:.1em}
+  .diagram-svg .t-emerald{fill:#047857;font-family:'JetBrains Mono',monospace;font-weight:600;font-size:10px;letter-spacing:.1em}
+  .diagram-svg .t-blue{fill:#1d4ed8;font-family:'JetBrains Mono',monospace;font-weight:600;font-size:10px;letter-spacing:.1em}
+  .diagram-svg .t-mono{font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:500;letter-spacing:.05em}
+  .diagram-svg .t-muted{fill:var(--text-muted);font-family:'Inter',sans-serif;font-size:11px}
+  .diagram-svg .arrow{stroke:var(--slate-700);stroke-width:1.25;fill:none}
+
+  /* Step-by-step guides */
+  .guide{
+    background:#fff;border:1px solid var(--border);border-radius:var(--r-lg);
+    padding:0;overflow:hidden;
+  }
+  .guide + .guide{margin-top:20px}
+  .guide-head{
+    padding:22px 28px;border-bottom:1px solid var(--border);
+    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;
+  }
+  .guide-head h3{margin:0;font-size:18px;color:var(--slate-900)}
+  .guide-head .badge{
+    font-family:'JetBrains Mono',monospace;font-size:10px;
+    color:var(--text-muted);letter-spacing:.18em;text-transform:uppercase;
+  }
+  .guide-tabs{
+    display:flex;gap:6px;padding:14px 28px 0;
+    border-bottom:1px solid var(--border);
+  }
+  .guide-tab{
+    padding:10px 18px;border:1px solid var(--border-strong);
+    background:#fff;border-radius:var(--r-sm) var(--r-sm) 0 0;border-bottom:none;
+    font-size:14px;cursor:pointer;font-weight:500;color:var(--text-soft);
+    margin-bottom:-1px;transition:all .12s ease;font-family:'Inter',sans-serif;
+  }
+  .guide-tab.active{background:var(--red);color:#fff;border-color:var(--red)}
+  .guide-tab:hover:not(.active){color:var(--text);border-color:var(--slate-500)}
+
+  .guide-content{padding:8px 28px 26px}
+  .guide-panel{display:none}
+  .guide-panel.active{display:block}
+
+  .steps-list{counter-reset:step;padding:0;margin:0;list-style:none}
+  .steps-list > li{
+    counter-increment:step;
+    display:grid;grid-template-columns:42px 1fr;gap:16px;
+    padding:18px 0;border-top:1px solid var(--border);
+  }
+  .steps-list > li:first-child{border-top:none;padding-top:14px}
+  .steps-list > li::before{
+    content:counter(step,decimal-leading-zero);
+    display:inline-flex;align-items:flex-start;justify-content:center;
+    width:36px;height:30px;padding-top:6px;
+    border:1px solid var(--border-strong);
+    color:var(--red);background:var(--red-50);
+    border-radius:6px;
+    font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;
+    letter-spacing:.04em;
+  }
+  .step-body h4{font-size:15px;margin:4px 0 8px;color:var(--slate-900);font-weight:600}
+  .step-body p{font-size:14px;color:var(--text-soft);margin:0 0 8px;line-height:1.65}
+  .step-body code{
+    background:var(--surface-3);padding:1px 6px;border-radius:3px;
+    font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--slate-900);
+    border:1px solid var(--border);
+  }
+  .step-body .step-link{
+    display:inline-flex;align-items:center;gap:6px;
+    font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--red);
+    margin-top:6px;font-weight:500;
+  }
+  .step-body .step-link:hover{text-decoration:underline}
+  .step-body ul{margin:6px 0 0;padding-left:18px;font-size:13px;color:var(--text-muted);line-height:1.7}
+  .step-body ul li::marker{color:var(--red)}
+  .step-body .nav-path{
+    display:inline-block;padding:5px 10px;background:var(--surface-3);
+    border:1px solid var(--border);border-radius:4px;
+    font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--slate-700);
+    margin:4px 0;
+  }
+
+  /* Author block in footer */
+  .author-block{
+    margin-top:24px;padding-top:20px;
+    border-top:1px solid var(--border);
+    display:flex;gap:18px;align-items:flex-start;
+  }
+  .author-photo{
+    flex:0 0 96px;width:96px;height:96px;border-radius:50%;
+    object-fit:cover;object-position:center top;
+    border:2px solid var(--red);
+    box-shadow:0 2px 8px rgba(220,38,38,0.18);
+    background:#0f172a;
+  }
+  .author-text{flex:1;min-width:0}
+  .author-block h4{margin-bottom:10px}
+  .author-block p{color:var(--text-muted);font-size:13px;line-height:1.6;margin:0 0 10px}
+  .author-block strong{color:var(--text)}
+  .author-link{
+    display:inline-flex;align-items:center;gap:6px;
+    font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--red);
+    font-weight:500;letter-spacing:.04em;
+  }
+  .author-link:hover{color:var(--red-2)}
+  @media (max-width: 720px){
+    .author-block{flex-direction:column;align-items:flex-start}
+    .author-photo{width:80px;height:80px;flex-basis:auto}
+  }
+
+  /* Wizard */
+  .wizard{
+    background:#fff;border:1px solid var(--border);border-radius:var(--r-lg);
+    padding:28px;box-shadow:var(--shadow-card);
+  }
+  .wizard-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px 18px}
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field.full{grid-column:1 / -1}
+  .field label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;font-weight:600;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;
+  }
+  .field label .req{color:var(--red);margin-left:4px}
+  .field input,.field select{
+    padding:10px 12px;border:1px solid var(--border-strong);border-radius:var(--r-sm);
+    font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:#fff;
+  }
+  .field input:focus,.field select:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 3px rgba(220,38,38,.12)}
+  .field .hint{font-size:12px;color:var(--text-muted);line-height:1.5}
+  details.advanced{
+    margin-top:16px;padding-top:16px;border-top:1px solid var(--border);
+  }
+  details.advanced summary{
+    cursor:pointer;font-size:13px;font-weight:600;color:var(--slate-700);
+    font-family:'Inter',sans-serif;list-style:none;display:flex;align-items:center;gap:6px;
+    padding:4px 0;
+  }
+  details.advanced summary::-webkit-details-marker{display:none}
+  details.advanced summary::before{
+    content:"+";display:inline-block;width:18px;height:18px;text-align:center;line-height:16px;
+    border:1px solid var(--border-strong);border-radius:4px;font-weight:700;color:var(--red);
+  }
+  details.advanced[open] summary::before{content:"−"}
+  details.advanced[open] summary{margin-bottom:14px}
+  .wizard-actions{
+    display:flex;align-items:center;gap:14px;margin-top:22px;padding-top:18px;border-top:1px solid var(--border);
+    flex-wrap:wrap;
+  }
+  .wizard-status{
+    font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-muted);letter-spacing:.04em;
+    flex:1;min-width:200px;
+  }
+  .wizard-status.ok{color:#047857}
+  .wizard-status.err{color:var(--red)}
+  .wizard-status.busy{color:var(--blue)}
+  .wizard-note{
+    margin-top:12px;font-size:12px;color:var(--text-muted);line-height:1.55;
+  }
+  .wizard-note code{
+    background:var(--surface-3);padding:1px 5px;border-radius:3px;
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+  }
+
+  @media (max-width: 980px){
+    .hero{padding:48px 16px 36px}
+    .hero-inner{grid-template-columns:1fr;gap:28px}
+    h1{font-size:36px}
+    h2{font-size:28px}
+    .stats{grid-template-columns:repeat(2,1fr)}
+    .steps{grid-template-columns:1fr 1fr}
+    .templates-grid{grid-template-columns:1fr}
+    .wizard-grid{grid-template-columns:1fr}
+    .overview-grid{grid-template-columns:1fr 1fr}
+    .risks-grid{grid-template-columns:1fr}
+    .about-grid{grid-template-columns:1fr}
+    .score-card{grid-template-columns:1fr;text-align:center}
+    .nav{display:none}
+    footer .container{grid-template-columns:1fr}
+    .topbar-inner{padding:12px 16px}
+    section{padding:48px 16px}
+  }
+  @media (max-width: 560px){
+    .overview-grid{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a href="#top" class="brand">
+      <span class="brand-mark">AI</span>
+      <span>AI Governance &amp; Hardening</span>
+    </a>
+    <nav class="nav" aria-label="Primary">
+      <a href="#overview">What's inside</a>
+      <a href="#assessment">Self-Assessment</a>
+      <a href="#wizard">Customise</a>
+      <a href="#how-it-works">How it works</a>
+      <a href="#templates">Templates</a>
+      <a href="#endpoint">Endpoint</a>
+      <a href="#guides">Step-by-step</a>
+      <a href="#controls">Controls</a>
+      <a href="#crosswalk">Frameworks</a>
+      <a href="#risks">Risks</a>
+    </nav>
+    <a href="#templates" class="topbar-cta">Get the templates</a>
+  </div>
+</header>
+
+<main id="top">
+
+  <section class="hero" style="border-top:none">
+    <div class="hero-inner">
+      <div>
+        <span class="eyebrow"><span class="dot"></span>Open Source · MIT License · Community Edition</span>
+        <h1>Adopt AI safely. <span class="accent">Govern it like a grown-up.</span></h1>
+        <p class="lede">A free, framework-aligned starter kit for any organisation. Download a complete AI policy, risk-assessment workbook, hardening controls catalogue, and incident-response playbook — and run a maturity self-assessment in under fifteen minutes.</p>
+        <div class="hero-cta">
+          <a href="#assessment" class="btn btn-primary">Where do you stand? →</a>
+          <a href="#wizard" class="btn btn-ghost">Build your kit</a>
+        </div>
+      </div>
+      <aside class="hero-art" aria-label="Frameworks covered">
+        <div class="hero-art-label">Mapped to the frameworks that matter</div>
+        <div class="frameworks">
+          <div class="framework-pill"><span class="badge">NIST</span><span>AI RMF 1.0</span></div>
+          <div class="framework-pill"><span class="badge">ISO</span><span>42001:2023</span></div>
+          <div class="framework-pill"><span class="badge">EU</span><span>AI Act</span></div>
+          <div class="framework-pill"><span class="badge">OWASP</span><span>LLM Top 10</span></div>
+          <div class="framework-pill"><span class="badge">MITRE</span><span>ATLAS</span></div>
+          <div class="framework-pill"><span class="badge">NIST</span><span>CSF 2.0</span></div>
+        </div>
+        <p>Every control in the workbooks references the same identifiers, so coverage is auditable end to end.</p>
+      </aside>
+    </div>
+  </section>
+
+  <section class="stats" style="border-top:none;padding-top:0">
+    <div class="stat"><div class="num" id="stat-controls">72</div><div class="lbl">Hardening Controls</div></div>
+    <div class="stat"><div class="num">41</div><div class="lbl">Vendor DD Questions</div></div>
+    <div class="stat"><div class="num">10</div><div class="lbl">AI Tool Playbooks</div></div>
+    <div class="stat"><div class="num">30+</div><div class="lbl">Downloadable Artefacts</div></div>
+  </section>
+
+  <!-- WHAT'S INSIDE -->
+  <section id="overview" class="getting-started">
+    <div class="container">
+      <div class="section-head">
+        <div class="kicker">What's inside</div>
+        <h2>One page, ten sections, in the order most people work through them.</h2>
+        <p>Start by scoring where you are today, then build a personalised kit, then dive into the templates and operational artefacts. Each card below jumps to the section.</p>
+      </div>
+
+      <div class="overview-grid">
+
+        <a class="overview-card is-primary" href="#assessment">
+          <span class="ord">01 · 3 MIN</span>
+          <h3>Maturity Self-Assessment</h3>
+          <p class="lede">Score 25 high-impact controls across Domains A–M. Local-only — nothing leaves your browser. Export CSV.</p>
+          <span class="arrow">Where do you stand? →</span>
+        </a>
+
+        <a class="overview-card" href="#wizard">
+          <span class="ord">02 · 30 SEC</span>
+          <h3>Customisation Wizard</h3>
+          <p class="lede">Fill in up to 15 fields. Download a ZIP with all 8 Office templates plus the policy-as-code, sandbox manifests, CI gates and per-tool drop-ins, all pre-filled.</p>
+          <span class="arrow">Build my kit →</span>
+        </a>
+
+        <a class="overview-card" href="#how-it-works">
+          <span class="ord">03</span>
+          <h3>How it works</h3>
+          <p class="lede">Five flow diagrams — endpoint protection, six-stage SDLC promotion, policy-as-code hardening, AI-built app sandbox, LLM application guardrails.</p>
+          <span class="arrow">See diagrams →</span>
+        </a>
+
+        <a class="overview-card" href="#llm-guardrails">
+          <span class="ord">04</span>
+          <h3>LLM Dev Guardrails</h3>
+          <p class="lede">Building an app that calls an LLM (RAG, chatbot, agent)? Input/output guards, RAG ACL preservation, agentic scoping, evals — full pre-deploy checklist.</p>
+          <span class="arrow">Read guardrails →</span>
+        </a>
+
+        <a class="overview-card" href="#templates">
+          <span class="ord">05</span>
+          <h3>Templates</h3>
+          <p class="lede">Eight core documents — Governance Standard, AUP &amp; Incident Playbook, Risk Assessment, Hardening Controls, Promotion Runbook, Code Review Checklist, Intune Deployment Guide, LLM Dev Guardrails.</p>
+          <span class="arrow">Browse →</span>
+        </a>
+
+        <a class="overview-card" href="#endpoint">
+          <span class="ord">06</span>
+          <h3>Endpoint &amp; SDLC</h3>
+          <p class="lede">Policy-as-code YAML, pre-flight scripts, three sandbox patterns (Cloudflare · Docker · Kubernetes), hardened Dockerfile, Kyverno admission policies, pre-commit + CI gates, plus a 14-category tool catalogue with free vs paid clearly tagged.</p>
+          <span class="arrow">Hardening artefacts →</span>
+        </a>
+
+        <a class="overview-card" href="#guides">
+          <span class="ord">07</span>
+          <h3>Step-by-step guides</h3>
+          <p class="lede">Walk-throughs for Intune deployment (macOS + Windows 11) and the six-stage SDLC promotion path.</p>
+          <span class="arrow">Walk through →</span>
+        </a>
+
+        <a class="overview-card" href="#controls">
+          <span class="ord">08</span>
+          <h3>Control catalogue</h3>
+          <p class="lede">Browse the 44 universal controls; the workbook adds Domain L (SDLC, 13) and Domain M (LLM dev, 15) — 72 total.</p>
+          <span class="arrow">Filter &amp; search →</span>
+        </a>
+
+        <a class="overview-card" href="#crosswalk">
+          <span class="ord">09</span>
+          <h3>Framework crosswalk</h3>
+          <p class="lede">One mapping table — NIST AI RMF, ISO/IEC 42001, EU AI Act, OWASP LLM Top 10, MITRE ATLAS.</p>
+          <span class="arrow">View mapping →</span>
+        </a>
+
+        <a class="overview-card" href="#risks">
+          <span class="ord">10</span>
+          <h3>Risks</h3>
+          <p class="lede">Why this matters — the AI threat surface that traditional controls don't cover.</p>
+          <span class="arrow">Read →</span>
+        </a>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- SELF-ASSESSMENT -->
+  <section id="assessment">
+    <div class="container">
+      <div class="section-head">
+        <div class="kicker">Maturity Self-Assessment</div>
+        <h2>Where do you stand right now?</h2>
+        <p>Score each of the 25 high-impact controls below as Implemented, Partial, Not Implemented, or Not Applicable. Coverage spans Domains A–M, including SDLC promotion gates and LLM application development guardrails. The result is computed locally in your browser — nothing is sent anywhere — and you can export a CSV summary.</p>
+      </div>
+
+      <div class="score-card">
+        <div class="score-display">
+          <div class="num" id="score-pct">—</div>
+          <div class="pct">Coverage Score</div>
+          <div class="score-bar"><div class="score-bar-fill" id="score-bar" style="width:0%"></div></div>
+        </div>
+        <div class="score-meta">
+          <strong id="score-rating">Not yet scored</strong>
+          <span id="score-text">Tick the controls below to compute your maturity. Implemented counts full; Partial counts half. Not Applicable is excluded from the score.</span>
+          <div class="score-actions">
+            <button class="btn-on-purple" id="export-csv">Export CSV</button>
+            <button class="btn-on-purple" id="reset-assess">Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="assessment" id="assessment-form" aria-label="Maturity self-assessment">
+        <!-- questions injected -->
+      </div>
+    </div>
+  </section>
+
+  <!-- WIZARD -->
+  <section id="wizard">
+    <div class="container">
+      <div class="section-head">
+        <div class="kicker">Customisation Wizard</div>
+        <h2>Skip the find-and-replace. Build a personalised kit in 30 seconds.</h2>
+        <p>Fill in your organisation's details below and press the button. The wizard rewrites every customisable file in the kit — Office templates, the endpoint <code>policy.yaml</code>, sandbox configs, CI gates and per-tool drop-ins — in your browser (nothing is uploaded anywhere) and downloads a single ZIP with the folder structure preserved, ready to ship to Legal and drop into your repos.</p>
+      </div>
+
+      <form class="wizard" id="wizard-form" onsubmit="return false">
+        <div class="wizard-grid">
+          <div class="field full">
+            <label for="w-org">Organization name <span class="req">*</span></label>
+            <input id="w-org" type="text" placeholder="e.g. Acme Holdings Ltd" required />
+            <span class="hint">The legal name of your organisation. Replaces every <code style="background:var(--surface-3);padding:1px 4px;border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:11px">[Organization Name]</code> placeholder.</span>
+          </div>
+          <div class="field">
+            <label for="w-owner">Document owner</label>
+            <input id="w-owner" type="text" placeholder="e.g. CISO" />
+            <span class="hint">Role accountable for the Standard.</span>
+          </div>
+          <div class="field">
+            <label for="w-approver">Approver forum</label>
+            <input id="w-approver" type="text" placeholder="e.g. Information Security Working Group" />
+            <span class="hint">Body that approves major updates.</span>
+          </div>
+          <div class="field">
+            <label for="w-effective">Effective date</label>
+            <input id="w-effective" type="date" />
+            <span class="hint">When the policies become effective.</span>
+          </div>
+          <div class="field">
+            <label for="w-region">Vendor risk register</label>
+            <input id="w-region" type="text" placeholder="e.g. ServiceNow Vendor Manager" />
+            <span class="hint">Name of your supplier risk system.</span>
+          </div>
+          <div class="field">
+            <label for="w-itsupport">IT support contact</label>
+            <input id="w-itsupport" type="text" placeholder="e.g. it-support@acme.com" />
+            <span class="hint">Where users request AI tooling.</span>
+          </div>
+          <div class="field">
+            <label for="w-security">Security contact</label>
+            <input id="w-security" type="text" placeholder="e.g. soc@acme.com" />
+            <span class="hint">Where AI incidents are reported.</span>
+          </div>
+        </div>
+
+        <details class="advanced">
+          <summary>More placeholders (optional)</summary>
+          <div class="wizard-grid">
+            <div class="field">
+              <label for="w-toolregister">Approved AI tool register</label>
+              <input id="w-toolregister" type="text" placeholder="e.g. Confluence — IT/Approved AI Tools" />
+            </div>
+            <div class="field">
+              <label for="w-aup">Acceptable use policy reference</label>
+              <input id="w-aup" type="text" placeholder="e.g. POL-04 Acceptable Use of Technology" />
+            </div>
+            <div class="field">
+              <label for="w-exception">Exception procedure</label>
+              <input id="w-exception" type="text" placeholder="e.g. PROC-02 Exception Management" />
+            </div>
+            <div class="field">
+              <label for="w-isms">ISMS scope document</label>
+              <input id="w-isms" type="text" placeholder="e.g. ISMS-01 Scope of the ISMS" />
+            </div>
+            <div class="field">
+              <label for="w-oncall">On-call number / pager</label>
+              <input id="w-oncall" type="text" placeholder="e.g. PagerDuty — Security On-Call" />
+            </div>
+            <div class="field">
+              <label for="w-author">Initial draft author</label>
+              <input id="w-author" type="text" placeholder="e.g. Jane Doe, AI Governance Lead" />
+            </div>
+            <div class="field">
+              <label for="w-tenantslug">Sandbox tenant slug</label>
+              <input id="w-tenantslug" type="text" placeholder="e.g. acme" pattern="[a-z0-9\-]+" />
+              <span class="hint">Lowercase, alphanumeric. Used in <code style="background:var(--surface-3);padding:1px 4px;border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:11px">sandbox/wrangler.toml</code> for the Cloudflare Workers project name and resource bindings.</span>
+            </div>
+            <div class="field">
+              <label for="w-owneremail">Sandbox owner email</label>
+              <input id="w-owneremail" type="email" placeholder="e.g. ai-platform@example.com" />
+              <span class="hint">Goes into the wrangler.toml ownership comment so a vendor / auditor can identify the responsible team.</span>
+            </div>
+          </div>
+        </details>
+
+        <div class="wizard-actions">
+          <button type="button" id="w-build" class="btn btn-primary">Build my kit (ZIP)</button>
+          <button type="button" id="w-reset" class="btn-on-purple" style="border-color:var(--border-strong)">Reset</button>
+          <span class="wizard-status" id="w-status">Fields left blank stay as placeholders so you can fill them in later.</span>
+        </div>
+        <p class="wizard-note">
+          Everything happens in your browser — your inputs and the templates never leave your device. The wizard rewrites every <code>.docx</code> / <code>.xlsx</code> / <code>.yaml</code> / <code>.json</code> / <code>.toml</code> / <code>.md</code> / <code>.sh</code> / <code>.ps1</code> file in memory, preserves the folder layout (<code>endpoint-policy/</code>, <code>scripts/</code>, <code>sandbox/</code>, <code>ci/</code>, <code>per-tool/</code>) inside the ZIP, and lists any tokens that still need a manual touch in the bundled <code>README.txt</code>.
+        </p>
+      </form>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS — flow diagrams -->
+  <section id="how-it-works" style="background:var(--surface-2);border-bottom:1px solid var(--border)">
+    <div class="container">
+      <div class="section-head">
+        <div class="kicker">How it works</div>
+        <h2>Five flows on one page.</h2>
+        <p>The kit's operating model in pictures — endpoint, SDLC, hardening, sandbox, and LLM application guardrails. Colour encodes meaning, not decoration: red for guards and forbidden actions, amber for caution, emerald for the safe path, blue for context.</p>
+      </div>
+
+      <div class="diagrams-stack">
+
+        <!-- ============================================================== -->
+        <!-- DIAGRAM 1: Endpoint Protection                                  -->
+        <!-- ============================================================== -->
+        <div class="diagram-card">
+          <div class="diagram-head">
+            <h3>Protect endpoint for safe usage of AI tools</h3>
+            <span class="tag">Containment + verification</span>
+          </div>
+          <p class="diagram-desc">AI tools run inside a multi-layer cage. Filesystem, execution, network, and MCP scopes are each enforced by a distinct control plane. A pre-flight script verifies the cage is intact and reports drift to your SIEM.</p>
+
+          <svg class="diagram-svg" viewBox="0 0 720 470" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Endpoint protection architecture">
+            <defs>
+              <marker id="ep-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155"/>
+              </marker>
+              <marker id="ep-arr-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#dc2626"/>
+              </marker>
+            </defs>
+
+            <!-- Endpoint container -->
+            <rect x="180" y="22" width="360" height="56" rx="8" class="b-fill" stroke="#0f172a" stroke-width="1.5"/>
+            <text x="360" y="48" text-anchor="middle" class="t-dark">Developer endpoint</text>
+            <text x="360" y="66" text-anchor="middle" class="t-mono" fill="#64748b">macOS · Windows 11 · Linux</text>
+
+            <!-- AI tools -->
+            <rect x="60" y="106" width="600" height="50" rx="8" class="b-fill-red" stroke="#dc2626" stroke-width="1.5"/>
+            <text x="360" y="126" text-anchor="middle" class="t-dark">AI coding tools</text>
+            <text x="360" y="144" text-anchor="middle" class="t-mono" fill="#64748b">Claude Code · ChatGPT desktop · Codex CLI · Cursor · Copilot CLI</text>
+
+            <line x1="360" y1="156" x2="360" y2="186" class="arrow" marker-end="url(#ep-arr)"/>
+
+            <!-- Containment row -->
+            <g>
+              <!-- Filesystem -->
+              <rect x="30" y="200" width="150" height="120" rx="8" class="b-fill-emerald" stroke="#10b981" stroke-width="1.5"/>
+              <text x="105" y="224" text-anchor="middle" class="t-dark">Filesystem</text>
+              <text x="105" y="244" text-anchor="middle" class="t-emerald">DEV DRIVE / APFS</text>
+              <text x="105" y="270" text-anchor="middle" class="t-muted">Allow: working folder</text>
+              <text x="105" y="287" text-anchor="middle" class="t-muted">Deny: home / .ssh / .aws</text>
+              <text x="105" y="304" text-anchor="middle" class="t-muted">Enforced by AppLocker /</text>
+              <text x="105" y="316" text-anchor="middle" class="t-muted">TCC / firejail</text>
+
+              <!-- Execution -->
+              <rect x="195" y="200" width="150" height="120" rx="8" class="b-fill-amber" stroke="#f59e0b" stroke-width="1.5"/>
+              <text x="270" y="224" text-anchor="middle" class="t-dark">Execution</text>
+              <text x="270" y="244" text-anchor="middle" class="t-amber">SHELL ALLOW-LIST</text>
+              <text x="270" y="270" text-anchor="middle" class="t-muted">Allow: git, npm, pytest,</text>
+              <text x="270" y="282" text-anchor="middle" class="t-muted">node, python3, docker</text>
+              <text x="270" y="304" text-anchor="middle" class="t-muted">Deny: curl, scp, ssh,</text>
+              <text x="270" y="316" text-anchor="middle" class="t-muted">sudo, kubectl prod-*</text>
+
+              <!-- Network -->
+              <rect x="360" y="200" width="150" height="120" rx="8" class="b-fill-blue" stroke="#2563eb" stroke-width="1.5"/>
+              <text x="435" y="224" text-anchor="middle" class="t-dark">Network egress</text>
+              <text x="435" y="244" text-anchor="middle" class="t-blue">PROXY / SSE</text>
+              <text x="435" y="270" text-anchor="middle" class="t-muted">api.anthropic.com</text>
+              <text x="435" y="282" text-anchor="middle" class="t-muted">api.openai.com</text>
+              <text x="435" y="294" text-anchor="middle" class="t-muted">npm / pypi / github</text>
+              <text x="435" y="316" text-anchor="middle" class="t-muted">Default: deny everything</text>
+
+              <!-- MCP -->
+              <rect x="525" y="200" width="150" height="120" rx="8" class="b-fill-red" stroke="#dc2626" stroke-width="1.5"/>
+              <text x="600" y="224" text-anchor="middle" class="t-dark">MCP servers</text>
+              <text x="600" y="244" text-anchor="middle" class="t-red">ALLOW-LIST + SIGNED</text>
+              <text x="600" y="270" text-anchor="middle" class="t-muted">Deployed via MDM</text>
+              <text x="600" y="282" text-anchor="middle" class="t-muted">Block community</text>
+              <text x="600" y="294" text-anchor="middle" class="t-muted">Block unsigned</text>
+              <text x="600" y="316" text-anchor="middle" class="t-muted">Pin versions</text>
+            </g>
+
+            <!-- Down to verification -->
+            <line x1="360" y1="320" x2="360" y2="350" class="arrow" marker-end="url(#ep-arr)"/>
+
+            <!-- Verification loop -->
+            <rect x="120" y="362" width="200" height="80" rx="8" class="b-fill-dark"/>
+            <text x="220" y="386" text-anchor="middle" class="t-light">Pre-flight script</text>
+            <text x="220" y="406" text-anchor="middle" class="t-mono" fill="#94a3b8">on login + 24h cron</text>
+            <text x="220" y="422" text-anchor="middle" class="t-mono" fill="#94a3b8">exit 0/1/2 — pass/warn/fail</text>
+
+            <line x1="320" y1="402" x2="392" y2="402" class="arrow" marker-end="url(#ep-arr-red)" stroke="#dc2626"/>
+            <text x="356" y="394" text-anchor="middle" class="t-mono" fill="#dc2626">JSON</text>
+
+            <rect x="400" y="362" width="200" height="80" rx="8" class="b-fill-dark"/>
+            <text x="500" y="386" text-anchor="middle" class="t-light">SIEM</text>
+            <text x="500" y="406" text-anchor="middle" class="t-mono" fill="#94a3b8">drift detection · alerts</text>
+            <text x="500" y="422" text-anchor="middle" class="t-mono" fill="#94a3b8">12-month retention</text>
+          </svg>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- DIAGRAM 2: SDLC Promotion                                       -->
+        <!-- ============================================================== -->
+        <div class="diagram-card">
+          <div class="diagram-head">
+            <h3>Promote AI-built apps safely (SDLC)</h3>
+            <span class="tag">Six stages · NIST SSDF + SLSA L3</span>
+          </div>
+          <p class="diagram-desc">No production deploy without stages 3, 4 and 5 evidenced. Hard gates marked in red mean a failed exit blocks promotion.</p>
+
+          <svg class="diagram-svg" viewBox="0 0 1000 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Six-stage SDLC promotion pipeline">
+            <defs>
+              <marker id="sdlc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155"/>
+              </marker>
+            </defs>
+
+            <!-- 7 stage tiles, x stride = 132, width = 120, y = 60, h = 200 -->
+            <!-- Stage 0 -->
+            <g>
+              <rect x="20" y="60" width="120" height="200" rx="8" class="b-fill" stroke="#0f172a" stroke-width="1.5"/>
+              <text x="80" y="85" text-anchor="middle" class="t-mono" fill="#64748b">STAGE 00</text>
+              <text x="80" y="112" text-anchor="middle" class="t-dark">Generation</text>
+              <line x1="32" y1="125" x2="128" y2="125" stroke="#e2e8f0"/>
+              <text x="80" y="148" text-anchor="middle" class="t-muted">Owner:</text>
+              <text x="80" y="164" text-anchor="middle" class="t-mono" fill="#0f172a">Developer</text>
+              <text x="80" y="200" text-anchor="middle" class="t-muted">AI tool inside</text>
+              <text x="80" y="214" text-anchor="middle" class="t-muted">Dev Drive policy</text>
+              <text x="80" y="234" text-anchor="middle" class="t-muted">Co-author marker</text>
+              <text x="80" y="248" text-anchor="middle" class="t-muted">on every commit</text>
+            </g>
+
+            <!-- Stage 1 -->
+            <g>
+              <rect x="152" y="60" width="120" height="200" rx="8" class="b-fill" stroke="#0f172a" stroke-width="1.5"/>
+              <text x="212" y="85" text-anchor="middle" class="t-mono" fill="#64748b">STAGE 01</text>
+              <text x="212" y="112" text-anchor="middle" class="t-dark">Self-review</text>
+              <line x1="164" y1="125" x2="260" y2="125" stroke="#e2e8f0"/>
+              <text x="212" y="148" text-anchor="middle" class="t-muted">Owner:</text>
+              <text x="212" y="164" text-anchor="middle" class="t-mono" fill="#0f172a">Developer</text>
+              <text x="212" y="200" text-anchor="middle" class="t-muted">Read every line</text>
+              <text x="212" y="214" text-anchor="middle" class="t-muted">Tests + lint green</text>
+              <text x="212" y="234" text-anchor="middle" class="t-muted">PR template</text>
+              <text x="212" y="248" text-anchor="middle" class="t-muted">filled in</text>
+            </g>
+
+            <!-- Stage 2 - Hard gate (CI + peer review = pre-merge gate to main) -->
+            <g>
+              <rect x="284" y="60" width="120" height="200" rx="8" class="b-fill-amber" stroke="#f59e0b" stroke-width="1.5"/>
+              <rect x="284" y="60" width="120" height="6" rx="3" fill="#dc2626"/>
+              <text x="344" y="85" text-anchor="middle" class="t-mono" fill="#dc2626">STAGE 02 ▼ GATE</text>
+              <text x="344" y="108" text-anchor="middle" class="t-dark">Pre-merge gates</text>
+              <line x1="296" y1="121" x2="392" y2="121" stroke="#fde68a"/>
+              <text x="344" y="142" text-anchor="middle" class="t-muted">Owner:</text>
+              <text x="344" y="156" text-anchor="middle" class="t-mono" fill="#0f172a">CI + reviewer</text>
+              <text x="344" y="178" text-anchor="middle" class="t-amber">SAST · SECRETS</text>
+              <text x="344" y="192" text-anchor="middle" class="t-amber">DEPS · LICENCE</text>
+              <text x="344" y="206" text-anchor="middle" class="t-amber">CONTAINER · SBOM</text>
+              <text x="344" y="220" text-anchor="middle" class="t-amber">SLSA L3 · COSIGN</text>
+              <text x="344" y="236" text-anchor="middle" class="t-amber">+ PEER REVIEW</text>
+              <text x="344" y="250" text-anchor="middle" class="t-amber">+ CODEOWNERS</text>
+            </g>
+
+            <!-- Stage 3 - Hard gate -->
+            <g>
+              <rect x="416" y="60" width="120" height="200" rx="8" class="b-fill-blue" stroke="#2563eb" stroke-width="1.5"/>
+              <rect x="416" y="60" width="120" height="6" rx="3" fill="#dc2626"/>
+              <text x="476" y="85" text-anchor="middle" class="t-mono" fill="#dc2626">STAGE 03 ▼ GATE</text>
+              <text x="476" y="112" text-anchor="middle" class="t-dark">Sandbox deploy</text>
+              <line x1="428" y1="125" x2="524" y2="125" stroke="#bfdbfe"/>
+              <text x="476" y="148" text-anchor="middle" class="t-muted">Owner:</text>
+              <text x="476" y="164" text-anchor="middle" class="t-mono" fill="#0f172a">Platform Eng</text>
+              <text x="476" y="200" text-anchor="middle" class="t-muted">Isolated tenant</text>
+              <text x="476" y="214" text-anchor="middle" class="t-muted">No prod data</text>
+              <text x="476" y="234" text-anchor="middle" class="t-muted">SSO-only access</text>
+              <text x="476" y="248" text-anchor="middle" class="t-muted">14-day expiry</text>
+            </g>
+
+            <!-- Stage 4 - Hard gate -->
+            <g>
+              <rect x="548" y="60" width="120" height="200" rx="8" class="b-fill-red" stroke="#dc2626" stroke-width="1.5"/>
+              <rect x="548" y="60" width="120" height="6" rx="3" fill="#dc2626"/>
+              <text x="608" y="85" text-anchor="middle" class="t-mono" fill="#dc2626">STAGE 04 ▼ GATE</text>
+              <text x="608" y="112" text-anchor="middle" class="t-dark">Security review</text>
+              <line x1="560" y1="125" x2="656" y2="125" stroke="#fecaca"/>
+              <text x="608" y="148" text-anchor="middle" class="t-muted">Owner:</text>
+              <text x="608" y="164" text-anchor="middle" class="t-mono" fill="#0f172a">Sec Eng</text>
+              <text x="608" y="200" text-anchor="middle" class="t-muted">60-item</text>
+              <text x="608" y="214" text-anchor="middle" class="t-muted">checklist</text>
+              <text x="608" y="234" text-anchor="middle" class="t-muted">Pen-test the</text>
+              <text x="608" y="248" text-anchor="middle" class="t-muted">sandbox URL</text>
+            </g>
+
+            <!-- Stage 5 - Hard gate -->
+            <g>
+              <rect x="680" y="60" width="120" height="200" rx="8" class="b-fill" stroke="#0f172a" stroke-width="1.5"/>
+              <rect x="680" y="60" width="120" height="6" rx="3" fill="#dc2626"/>
+              <text x="740" y="85" text-anchor="middle" class="t-mono" fill="#dc2626">STAGE 05 ▼ GATE</text>
+              <text x="740" y="112" text-anchor="middle" class="t-dark">Sign-off</text>
+              <line x1="692" y1="125" x2="788" y2="125" stroke="#e2e8f0"/>
+              <text x="740" y="148" text-anchor="middle" class="t-muted">Owner:</text>
+              <text x="740" y="164" text-anchor="middle" class="t-mono" fill="#0f172a">Sec + Prod + Eng</text>
+              <text x="740" y="200" text-anchor="middle" class="t-muted">3 signatures</text>
+              <text x="740" y="214" text-anchor="middle" class="t-muted">Decision Log</text>
+              <text x="740" y="234" text-anchor="middle" class="t-muted">12-month expiry</text>
+              <text x="740" y="248" text-anchor="middle" class="t-muted">Evidence pack</text>
+            </g>
+
+            <!-- Stage 6 -->
+            <g>
+              <rect x="812" y="60" width="120" height="200" rx="8" class="b-fill-emerald" stroke="#10b981" stroke-width="1.5"/>
+              <text x="872" y="85" text-anchor="middle" class="t-mono" fill="#10b981">STAGE 06</text>
+              <text x="872" y="112" text-anchor="middle" class="t-dark">Production</text>
+              <line x1="824" y1="125" x2="920" y2="125" stroke="#a7f3d0"/>
+              <text x="872" y="148" text-anchor="middle" class="t-muted">Owner:</text>
+              <text x="872" y="164" text-anchor="middle" class="t-mono" fill="#0f172a">SRE</text>
+              <text x="872" y="200" text-anchor="middle" class="t-muted">Canary 1→10→100</text>
+              <text x="872" y="214" text-anchor="middle" class="t-muted">Auto-rollback</text>
+              <text x="872" y="234" text-anchor="middle" class="t-muted">Post-deploy</text>
+              <text x="872" y="248" text-anchor="middle" class="t-muted">review at 24h+7d</text>
+            </g>
+
+            <!-- Connecting arrows between stages -->
+            <line x1="140" y1="160" x2="152" y2="160" class="arrow" marker-end="url(#sdlc-arr)"/>
+            <line x1="272" y1="160" x2="284" y2="160" class="arrow" marker-end="url(#sdlc-arr)"/>
+            <line x1="404" y1="160" x2="416" y2="160" class="arrow" marker-end="url(#sdlc-arr)"/>
+            <line x1="536" y1="160" x2="548" y2="160" class="arrow" marker-end="url(#sdlc-arr)"/>
+            <line x1="668" y1="160" x2="680" y2="160" class="arrow" marker-end="url(#sdlc-arr)"/>
+            <line x1="800" y1="160" x2="812" y2="160" class="arrow" marker-end="url(#sdlc-arr)"/>
+
+            <!-- Hard-gate legend -->
+            <rect x="20" y="294" width="240" height="44" rx="6" class="b-fill" stroke="#e2e8f0" stroke-width="1"/>
+            <rect x="20" y="294" width="240" height="4" rx="2" fill="#dc2626"/>
+            <text x="32" y="316" class="t-mono" fill="#0f172a">▼ GATE</text>
+            <text x="32" y="332" class="t-mono" fill="#64748b">hard exit · blocks promotion</text>
+          </svg>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- DIAGRAM 3: Policy-as-code Hardening                             -->
+        <!-- ============================================================== -->
+        <div class="diagram-card">
+          <div class="diagram-head">
+            <h3>Hardening — policy as code</h3>
+            <span class="tag">One YAML · five emitters · MDM-deployed</span>
+          </div>
+          <p class="diagram-desc">A single <code style="background:var(--surface-3);padding:1px 5px;border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:12px">policy.yaml</code> is the source of truth. The emitter compiles it into vendor-native enforcement files, MDM ships them to endpoints, the pre-flight script verifies the boundary holds, and SIEM gets the proof.</p>
+
+          <svg class="diagram-svg" viewBox="0 0 960 540" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Policy-as-code hardening flow">
+            <defs>
+              <marker id="hd-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155"/>
+              </marker>
+              <marker id="hd-arr-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#dc2626"/>
+              </marker>
+            </defs>
+
+            <!-- Source of truth -->
+            <rect x="370" y="20" width="220" height="56" rx="8" class="b-fill-red" stroke="#dc2626" stroke-width="1.5"/>
+            <text x="480" y="44" text-anchor="middle" class="t-dark">policy.yaml</text>
+            <text x="480" y="64" text-anchor="middle" class="t-red">SINGLE SOURCE OF TRUTH</text>
+
+            <line x1="480" y1="76" x2="480" y2="104" class="arrow" marker-end="url(#hd-arr)"/>
+
+            <!-- Emitter -->
+            <rect x="395" y="106" width="170" height="40" rx="8" class="b-fill-dark"/>
+            <text x="480" y="130" text-anchor="middle" class="t-light">emit.py</text>
+
+            <line x1="480" y1="146" x2="480" y2="170" class="arrow" marker-end="url(#hd-arr)"/>
+
+            <!-- Five outputs row -->
+            <!-- m-settings -->
+            <g>
+              <rect x="20" y="186" width="170" height="74" rx="8" class="b-fill" stroke="#0f172a" stroke-width="1.5"/>
+              <text x="105" y="208" text-anchor="middle" class="t-dark">managed-settings</text>
+              <text x="105" y="224" text-anchor="middle" class="t-dark">.json</text>
+              <text x="105" y="244" text-anchor="middle" class="t-mono" fill="#64748b">CLAUDE CODE</text>
+            </g>
+
+            <!-- AppLocker -->
+            <g>
+              <rect x="200" y="186" width="170" height="74" rx="8" class="b-fill" stroke="#0f172a" stroke-width="1.5"/>
+              <text x="285" y="208" text-anchor="middle" class="t-dark">applocker.xml</text>
+              <text x="285" y="232" text-anchor="middle" class="t-mono" fill="#64748b">WINDOWS · OMA-URI</text>
+              <text x="285" y="248" text-anchor="middle" class="t-mono" fill="#64748b">CSP push</text>
+            </g>
+
+            <!-- TCC -->
+            <g>
+              <rect x="380" y="186" width="170" height="74" rx="8" class="b-fill" stroke="#0f172a" stroke-width="1.5"/>
+              <text x="465" y="208" text-anchor="middle" class="t-dark">aigov-tcc</text>
+              <text x="465" y="224" text-anchor="middle" class="t-dark">.mobileconfig</text>
+              <text x="465" y="244" text-anchor="middle" class="t-mono" fill="#64748b">macOS</text>
+            </g>
+
+            <!-- firejail -->
+            <g>
+              <rect x="560" y="186" width="170" height="74" rx="8" class="b-fill" stroke="#0f172a" stroke-width="1.5"/>
+              <text x="645" y="208" text-anchor="middle" class="t-dark">firejail-aigov</text>
+              <text x="645" y="224" text-anchor="middle" class="t-dark">.profile</text>
+              <text x="645" y="244" text-anchor="middle" class="t-mono" fill="#64748b">LINUX</text>
+            </g>
+
+            <!-- network allow-list -->
+            <g>
+              <rect x="740" y="186" width="200" height="74" rx="8" class="b-fill" stroke="#0f172a" stroke-width="1.5"/>
+              <text x="840" y="208" text-anchor="middle" class="t-dark">network-allow-list</text>
+              <text x="840" y="224" text-anchor="middle" class="t-dark">.txt</text>
+              <text x="840" y="244" text-anchor="middle" class="t-mono" fill="#64748b">PROXY / SSE</text>
+            </g>
+
+            <!-- Fan-out arrows from emit.py -->
+            <line x1="430" y1="170" x2="115" y2="186" class="arrow" marker-end="url(#hd-arr)"/>
+            <line x1="455" y1="170" x2="290" y2="186" class="arrow" marker-end="url(#hd-arr)"/>
+            <line x1="480" y1="170" x2="465" y2="186" class="arrow" marker-end="url(#hd-arr)"/>
+            <line x1="505" y1="170" x2="640" y2="186" class="arrow" marker-end="url(#hd-arr)"/>
+            <line x1="530" y1="170" x2="830" y2="186" class="arrow" marker-end="url(#hd-arr)"/>
+
+            <!-- MDM converge -->
+            <line x1="105" y1="260" x2="430" y2="294" class="arrow" marker-end="url(#hd-arr)"/>
+            <line x1="285" y1="260" x2="450" y2="294" class="arrow" marker-end="url(#hd-arr)"/>
+            <line x1="465" y1="260" x2="480" y2="294" class="arrow" marker-end="url(#hd-arr)"/>
+            <line x1="645" y1="260" x2="510" y2="294" class="arrow" marker-end="url(#hd-arr)"/>
+            <line x1="840" y1="260" x2="530" y2="294" class="arrow" marker-end="url(#hd-arr)"/>
+
+            <!-- MDM box -->
+            <rect x="370" y="296" width="220" height="56" rx="8" class="b-fill-blue" stroke="#2563eb" stroke-width="1.5"/>
+            <text x="480" y="320" text-anchor="middle" class="t-dark">MDM</text>
+            <text x="480" y="340" text-anchor="middle" class="t-blue">INTUNE · JAMF · KANDJI</text>
+
+            <line x1="480" y1="352" x2="480" y2="382" class="arrow" marker-end="url(#hd-arr)"/>
+
+            <!-- Endpoints row — widened to 230 wide to give path text breathing room -->
+            <g>
+              <rect x="120" y="386" width="230" height="60" rx="8" class="b-fill-emerald" stroke="#10b981" stroke-width="1.5"/>
+              <text x="235" y="408" text-anchor="middle" class="t-dark">macOS</text>
+              <text x="235" y="426" text-anchor="middle" class="t-mono" fill="#64748b">/Library/.../ClaudeCode/</text>
+
+              <rect x="365" y="386" width="230" height="60" rx="8" class="b-fill-emerald" stroke="#10b981" stroke-width="1.5"/>
+              <text x="480" y="408" text-anchor="middle" class="t-dark">Windows 11</text>
+              <text x="480" y="426" text-anchor="middle" class="t-mono" fill="#64748b">C:\ProgramData\ClaudeCode\</text>
+
+              <rect x="610" y="386" width="230" height="60" rx="8" class="b-fill-emerald" stroke="#10b981" stroke-width="1.5"/>
+              <text x="725" y="408" text-anchor="middle" class="t-dark">Linux</text>
+              <text x="725" y="426" text-anchor="middle" class="t-mono" fill="#64748b">/etc/claude-code/</text>
+            </g>
+
+            <!-- Verification loop arrows — recalculated to land on new endpoint x-centers -->
+            <line x1="235" y1="446" x2="160" y2="490" class="arrow" stroke="#dc2626" marker-end="url(#hd-arr-red)"/>
+            <line x1="480" y1="446" x2="480" y2="490" class="arrow" stroke="#dc2626" marker-end="url(#hd-arr-red)"/>
+            <line x1="725" y1="446" x2="800" y2="490" class="arrow" stroke="#dc2626" marker-end="url(#hd-arr-red)"/>
+
+            <!-- Pre-flight + SIEM -->
+            <rect x="60" y="492" width="200" height="40" rx="8" class="b-fill-dark"/>
+            <text x="160" y="516" text-anchor="middle" class="t-light">Pre-flight script</text>
+
+            <line x1="260" y1="512" x2="380" y2="512" class="arrow" marker-end="url(#hd-arr-red)" stroke="#dc2626"/>
+
+            <rect x="380" y="492" width="200" height="40" rx="8" class="b-fill-dark"/>
+            <text x="480" y="516" text-anchor="middle" class="t-light">SIEM</text>
+
+            <line x1="580" y1="512" x2="700" y2="512" class="arrow" marker-end="url(#hd-arr-red)" stroke="#dc2626"/>
+
+            <rect x="700" y="492" width="200" height="40" rx="8" class="b-fill-dark"/>
+            <text x="800" y="516" text-anchor="middle" class="t-light">Drift alerts</text>
+          </svg>
+        </div>
+
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- DIAGRAM 4: AI-built app sandbox architecture                    -->
+      <!-- ============================================================== -->
+      <div class="diagram-card" style="margin-top:22px">
+        <div class="diagram-head">
+          <h3>AI-built app sandbox — Stage 5 detail</h3>
+          <span class="tag">Three deployment patterns · isolated by default</span>
+        </div>
+        <p class="diagram-desc">Where an AI-built application lives between Stage&nbsp;4 (security review) and Stage&nbsp;6 (production). Three deployment patterns are shipped in <code>templates/sandbox/</code> — pick the one that fits your stack. All three share the same boundary controls: SSO at the front door, deny-by-default egress, synthetic test data only, full request logging to SIEM, time-bounded lifetime. The exit is two-way: approved goes to production with a re-signed image, rejected goes back to the developer with a remediation list.</p>
+
+        <svg class="diagram-svg" viewBox="0 0 960 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="AI-built app sandbox architecture — three patterns and boundary controls">
+          <defs>
+            <marker id="sb-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155"/>
+            </marker>
+            <marker id="sb-arr-em" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#10b981"/>
+            </marker>
+            <marker id="sb-arr-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#dc2626"/>
+            </marker>
+          </defs>
+
+          <!-- TOP BAR — Pre-sandbox gates -->
+          <rect x="20" y="18" width="920" height="42" rx="6" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1"/>
+          <text x="480" y="36" text-anchor="middle" class="t-mono" fill="#dc2626">PRE-SANDBOX GATES (from Stage 3 → 4)</text>
+          <text x="480" y="52" text-anchor="middle" class="t-muted">Image cosign-signed · CycloneDX SBOM (with AI/ML extension) attested · Stage 4 approver named · no production secrets injected</text>
+
+          <!-- "FROM CI/CD" arrow into the sandbox -->
+          <text x="480" y="78" text-anchor="middle" class="t-mono" fill="#64748b">FROM CI / CD</text>
+          <line x1="480" y1="84" x2="480" y2="108" class="arrow" marker-end="url(#sb-arr)"/>
+
+          <!-- SANDBOX BOUNDARY (red dashed outer frame) -->
+          <rect x="22" y="110" width="916" height="498" rx="10" fill="none" stroke="#dc2626" stroke-width="1.6" stroke-dasharray="6 4"/>
+          <text x="40" y="130" class="t-red">SANDBOX BOUNDARY</text>
+          <text x="40" y="146" class="t-muted">Isolated from production · synthetic data only · 14-day TTL</text>
+
+          <!-- Front door box -->
+          <rect x="40" y="158" width="880" height="40" rx="8" fill="#fff" stroke="#0f172a" stroke-width="1.5"/>
+          <text x="56" y="180" class="t-mono" fill="#0f172a">FRONT DOOR</text>
+          <text x="200" y="180" class="t-dark">SSO + phishing-resistant MFA · IP allow-list · audit log → SIEM</text>
+
+          <!-- Three deployment pattern columns -->
+          <!-- Pattern A — Cloudflare Workers -->
+          <rect x="40" y="214" width="280" height="142" rx="8" class="b-fill-blue" stroke="#2563eb" stroke-width="1.5"/>
+          <text x="56" y="234" class="t-blue">A · CLOUDFLARE WORKERS</text>
+          <text x="56" y="252" class="t-dark">Pages + Workers + Access (SSO)</text>
+          <text x="56" y="268" class="t-muted">D1 / R2 / KV resource bindings</text>
+          <text x="56" y="284" class="t-muted">Outbound Workers — model API only</text>
+          <text x="56" y="300" class="t-muted">Cron-triggered tear-down at 14d</text>
+          <text x="56" y="320" class="t-mono" fill="#64748b">templates/sandbox/</text>
+          <text x="56" y="336" class="t-mono" fill="#64748b">  wrangler.toml</text>
+          <text x="56" y="352" class="t-mono" fill="#64748b">  (managed SaaS)</text>
+
+          <!-- Pattern B — Docker Compose -->
+          <rect x="335" y="214" width="290" height="142" rx="8" fill="#fffbeb" stroke="#f59e0b" stroke-width="1.5"/>
+          <text x="351" y="234" class="t-amber">B · DOCKER COMPOSE</text>
+          <text x="351" y="252" class="t-dark">read_only · cap_drop ALL · no-new-priv</text>
+          <text x="351" y="268" class="t-muted">tinyproxy egress firewall (CONNECT)</text>
+          <text x="351" y="284" class="t-muted">internal:&nbsp;true networks · tmpfs /tmp</text>
+          <text x="351" y="300" class="t-muted">Falco runtime monitoring (cap-based)</text>
+          <text x="351" y="320" class="t-mono" fill="#64748b">templates/sandbox/</text>
+          <text x="351" y="336" class="t-mono" fill="#64748b">  docker-compose.yml</text>
+          <text x="351" y="352" class="t-mono" fill="#64748b">  Dockerfile.template</text>
+
+          <!-- Pattern C — Kubernetes -->
+          <rect x="640" y="214" width="280" height="142" rx="8" class="b-fill-emerald" stroke="#10b981" stroke-width="1.5"/>
+          <text x="656" y="234" class="t-emerald">C · KUBERNETES</text>
+          <text x="656" y="252" class="t-dark">PSS-restricted ns · runAsNonRoot</text>
+          <text x="656" y="268" class="t-muted">Kyverno verifyImages (cosign keyless)</text>
+          <text x="656" y="284" class="t-muted">NetworkPolicy default-deny</text>
+          <text x="656" y="300" class="t-muted">readOnlyRootFilesystem · drop ALL</text>
+          <text x="656" y="320" class="t-mono" fill="#64748b">templates/sandbox/k8s/</text>
+          <text x="656" y="336" class="t-mono" fill="#64748b">  deployment.yaml · netpol.yaml</text>
+          <text x="656" y="352" class="t-mono" fill="#64748b">  kyverno-policies.yaml</text>
+
+          <!-- Cross-pattern runtime controls -->
+          <rect x="40" y="372" width="880" height="62" rx="8" class="b-fill-red" stroke="#dc2626" stroke-width="1.5"/>
+          <text x="56" y="392" class="t-red">RUNTIME CONTROLS — APPLY TO ALL THREE PATTERNS</text>
+          <text x="56" y="410" class="t-dark">Egress: model API only · synthetic test data only · no production secrets · full request log → SIEM</text>
+          <text x="56" y="426" class="t-muted">14-day auto-expire · no public ingress without WAF · no untrusted MCP servers · denial-of-wallet caps in place</text>
+
+          <!-- Validators (Stage 4/5 testing) -->
+          <rect x="40" y="450" width="280" height="78" rx="8" class="b-fill" stroke="#0f172a" stroke-width="1.5"/>
+          <text x="56" y="470" class="t-mono" fill="#0f172a">SECURITY REVIEWER</text>
+          <text x="56" y="488" class="t-dark">AI Code Review Checklist (60 items)</text>
+          <text x="56" y="504" class="t-muted">Architecture · auth · crypto · sandbox</text>
+          <text x="56" y="520" class="t-muted">Approves or returns with findings</text>
+
+          <rect x="335" y="450" width="290" height="78" rx="8" class="b-fill" stroke="#0f172a" stroke-width="1.5"/>
+          <text x="351" y="470" class="t-mono" fill="#0f172a">PEN-TESTER</text>
+          <text x="351" y="488" class="t-dark">DAST · authz bypass · prompt injection</text>
+          <text x="351" y="504" class="t-muted">OWASP ZAP · Burp · manual fuzzing</text>
+          <text x="351" y="520" class="t-muted">SSRF / XXE / RCE under sandbox limits</text>
+
+          <rect x="640" y="450" width="280" height="78" rx="8" class="b-fill" stroke="#0f172a" stroke-width="1.5"/>
+          <text x="656" y="470" class="t-mono" fill="#0f172a">EVAL HARNESS (CI)</text>
+          <text x="656" y="488" class="t-dark">Promptfoo · DeepEval · Patronus</text>
+          <text x="656" y="504" class="t-muted">Prompt-injection battery · groundedness</text>
+          <text x="656" y="520" class="t-muted">Bias · drift · hallucination scoring</text>
+
+          <!-- Outcomes — two paths -->
+          <!-- Approved (emerald) -->
+          <rect x="40" y="544" width="430" height="56" rx="8" class="b-fill-emerald" stroke="#10b981" stroke-width="1.6"/>
+          <text x="56" y="566" class="t-emerald">APPROVED — promote to production (Stage 6)</text>
+          <text x="56" y="586" class="t-dark">Re-sign with prod key · attach review evidence to SBOM · production deploy</text>
+
+          <!-- Rejected (red) -->
+          <rect x="490" y="544" width="430" height="56" rx="8" class="b-fill-red" stroke="#dc2626" stroke-width="1.6"/>
+          <text x="506" y="566" class="t-red">REJECTED — back to developer</text>
+          <text x="506" y="586" class="t-dark">Findings list with severity · remediation owner · re-enter at Stage 1 or 2</text>
+
+          <!-- BOTTOM BAR — Forbidden universals -->
+          <rect x="20" y="628" width="920" height="40" rx="6" fill="#0f172a"/>
+          <text x="480" y="646" text-anchor="middle" class="t-mono" fill="#fef2f2">FORBIDDEN INSIDE SANDBOX</text>
+          <text x="480" y="662" text-anchor="middle" class="t-mono" fill="#94a3b8">no production data · no production secrets · no public ingress without WAF · no untrusted MCP · no &gt; 14-day lifetime</text>
+
+          <!-- Exit-arrows narrative under bottom bar -->
+          <text x="255" y="690" text-anchor="middle" class="t-mono" fill="#10b981">↑ APPROVED → STAGE 6 (production)</text>
+          <text x="705" y="690" text-anchor="middle" class="t-mono" fill="#dc2626">↑ REJECTED → STAGE 1 / 2 (rework)</text>
+        </svg>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- DIAGRAM 5: LLM Application Development Guardrails               -->
+      <!-- ============================================================== -->
+      <div class="diagram-card" style="margin-top:22px">
+        <div class="diagram-head">
+          <h3>LLM Application Development Guardrails</h3>
+          <span class="tag">Per-request flow · OWASP LLM Top 10 (2025)</span>
+        </div>
+        <p class="diagram-desc">When you build a feature that calls an LLM, every request passes through six stages of guardrails. Two cross-cutting concerns wrap the whole flow — observability at the top, evaluation + operate at the bottom. Specialised guards (Lakera, NeMo, Azure AI Content Safety, OpenAI Moderation, Presidio, Patronus) sit alongside, wrapping the input and output stages.</p>
+
+        <svg class="diagram-svg" viewBox="0 0 960 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="LLM application development guardrails — per-request flow">
+          <defs>
+            <marker id="llm-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155"/>
+            </marker>
+            <marker id="llm-arr-em-end" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#10b981"/>
+            </marker>
+            <marker id="llm-arr-em-start" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 10 0 L 0 5 L 10 10 z" fill="#10b981"/>
+            </marker>
+          </defs>
+
+          <!-- TOP BAR — Cross-cutting Observability -->
+          <rect x="20" y="20" width="920" height="46" rx="6" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1"/>
+          <text x="480" y="40" text-anchor="middle" class="t-mono" fill="#dc2626">CROSS-CUTTING · OBSERVABILITY</text>
+          <text x="480" y="58" text-anchor="middle" class="t-muted">Per-call logging (redacted) · trace IDs · token + cost metrics · quality KPIs (refusal · retry · halluc-rate · feedback)</text>
+
+          <!-- USER INPUT label + arrow -->
+          <text x="280" y="86" text-anchor="middle" class="t-mono" fill="#64748b">USER INPUT</text>
+          <line x1="280" y1="92" x2="280" y2="118" class="arrow" marker-end="url(#llm-arr)"/>
+
+          <!-- STAGE 1 — Input guards -->
+          <rect x="40" y="120" width="540" height="78" rx="8" class="b-fill-red" stroke="#dc2626" stroke-width="1.5"/>
+          <text x="56" y="142" class="t-red">1 · INPUT GUARDS</text>
+          <text x="56" y="162" class="t-dark">Validation · PII redaction · rate limiting · prompt-injection guard</text>
+          <text x="56" y="180" class="t-muted">Multi-tenant isolation (tenant ID from request metadata, not user input)</text>
+          <text x="56" y="194" class="t-muted">Reject zero-width / control / unicode-tag obfuscation primitives</text>
+
+          <line x1="280" y1="198" x2="280" y2="220" class="arrow" marker-end="url(#llm-arr)"/>
+
+          <!-- STAGE 2 — Prompt + RAG -->
+          <rect x="40" y="222" width="540" height="78" rx="8" class="b-fill-blue" stroke="#2563eb" stroke-width="1.5"/>
+          <text x="56" y="244" class="t-blue">2 · PROMPT + RAG</text>
+          <text x="56" y="264" class="t-dark">System prompt versioned + signed · extraction guard · context marked untrusted</text>
+          <text x="56" y="282" class="t-muted">RAG retrieval AS the calling user — ACLs enforced at query time</text>
+          <text x="56" y="296" class="t-muted">Cite-then-summarise · sources required in response</text>
+
+          <!-- Vector DB side box (level with Stage 2) -->
+          <rect x="610" y="222" width="320" height="78" rx="8" class="b-fill" stroke="#0f172a" stroke-width="1.5"/>
+          <text x="624" y="244" class="t-dark">Vector DB</text>
+          <text x="624" y="262" class="t-mono" fill="#0f172a">USER-SCOPED ACL INDEX</text>
+          <text x="624" y="282" class="t-muted">Re-index on ACL change · daily reconciliation</text>
+          <text x="624" y="296" class="t-muted">Embedding model + version pinned in SBOM</text>
+
+          <!-- ACL bidirectional arrow Stage 2 ↔ Vector DB -->
+          <line x1="580" y1="261" x2="610" y2="261" stroke="#10b981" stroke-width="1.5" marker-end="url(#llm-arr-em-end)" marker-start="url(#llm-arr-em-start)"/>
+          <text x="595" y="254" text-anchor="middle" class="t-mono" fill="#10b981">ACL</text>
+
+          <line x1="280" y1="300" x2="280" y2="322" class="arrow" marker-end="url(#llm-arr)"/>
+
+          <!-- STAGE 3 — LLM call -->
+          <rect x="40" y="324" width="540" height="68" rx="8" class="b-fill-dark"/>
+          <text x="56" y="346" class="t-mono" fill="#dc2626">3 · LLM CALL</text>
+          <text x="56" y="366" class="t-light">Model + version pinned · API key per env · egress allow-list (model API only)</text>
+          <text x="56" y="384" class="t-mono" fill="#94a3b8">Call recorded: tokens · cost · trace ID · tenant ID · prompt-template version</text>
+
+          <line x1="280" y1="392" x2="280" y2="414" class="arrow" marker-end="url(#llm-arr)"/>
+
+          <!-- STAGE 4 — Output guards -->
+          <rect x="40" y="416" width="540" height="92" rx="8" class="b-fill-amber" stroke="#f59e0b" stroke-width="1.5"/>
+          <text x="56" y="438" class="t-amber">4 · OUTPUT GUARDS</text>
+          <text x="56" y="458" class="t-dark">Schema validation · PII detection · harm / toxicity classifier</text>
+          <text x="56" y="476" class="t-dark">Hallucination / groundedness check · citations rendered</text>
+          <text x="56" y="494" class="t-muted">"AI-generated" disclosure · suggested actions require explicit human click</text>
+          <text x="56" y="506" class="t-muted">Refuse · redact · transform on threshold (block before display)</text>
+
+          <line x1="280" y1="510" x2="280" y2="532" class="arrow" marker-end="url(#llm-arr)"/>
+          <text x="380" y="525" class="t-mono" fill="#dc2626">if agentic ↓</text>
+
+          <!-- STAGE 5 — Agentic loop (conditional) -->
+          <rect x="40" y="534" width="540" height="78" rx="8" class="b-fill-red" stroke="#dc2626" stroke-width="1.5"/>
+          <text x="56" y="556" class="t-red">5 · AGENTIC LOOP</text>
+          <text x="56" y="576" class="t-dark">Tool allow-list · argument validation · iteration / time / token caps</text>
+          <text x="56" y="594" class="t-muted">Human-in-the-loop for write / external actions · audit log → SIEM</text>
+          <text x="56" y="608" class="t-muted">Kill switch · per-agent rate limits</text>
+
+          <!-- SPECIALISED GUARDS side panel — wraps Stages 1, 4, 5 -->
+          <rect x="610" y="324" width="320" height="288" rx="8" fill="#fef2f2" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="6 4"/>
+          <text x="624" y="346" class="t-red">SPECIALISED GUARDS</text>
+          <text x="624" y="362" class="t-mono" fill="#64748b">APPLIES TO STAGES 1 · 4 · 5</text>
+          <text x="624" y="392" class="t-muted">· Lakera Guard</text>
+          <text x="624" y="410" class="t-muted">· NVIDIA NeMo Guardrails</text>
+          <text x="624" y="428" class="t-muted">· Azure AI Content Safety</text>
+          <text x="624" y="446" class="t-muted">· OpenAI Moderation</text>
+          <text x="624" y="464" class="t-muted">· Microsoft Presidio (PII)</text>
+          <text x="624" y="482" class="t-muted">· Patronus / Vectara HEM</text>
+          <text x="624" y="500" class="t-muted">  (hallucination)</text>
+          <text x="624" y="528" class="t-mono" fill="#dc2626">+ DENIAL-OF-WALLET</text>
+          <text x="624" y="548" class="t-muted">· Per-user / per-tenant rate</text>
+          <text x="624" y="566" class="t-muted">· Daily token / cost cap</text>
+          <text x="624" y="584" class="t-muted">· Anomaly detection</text>
+          <text x="624" y="602" class="t-muted">· Hard kill at 100% budget</text>
+
+          <!-- Arrow into final response -->
+          <line x1="280" y1="612" x2="280" y2="634" class="arrow" marker-end="url(#llm-arr)"/>
+
+          <!-- RESPONSE — final emerald box -->
+          <rect x="40" y="636" width="540" height="38" rx="8" class="b-fill-emerald" stroke="#10b981" stroke-width="1.5"/>
+          <text x="310" y="660" text-anchor="middle" class="t-emerald">RESPONSE TO USER · disclosure · citations · 👍/👎 feedback</text>
+
+          <!-- BOTTOM BAR — Cross-cutting Eval + Operate -->
+          <rect x="20" y="688" width="920" height="22" rx="6" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1"/>
+          <text x="480" y="703" text-anchor="middle" class="t-mono" fill="#dc2626">CROSS-CUTTING · EVALUATION (CI) + OPERATE — prompt-injection battery · groundedness · bias · drift · 90-day re-eval</text>
+        </svg>
+      </div>
+
+      <!-- Per-tool enforcement matrix — addresses "what about Codex / Copilot / Cursor" -->
+      <div class="diagram-card" id="per-tool" style="margin-top:22px">
+        <div class="diagram-head">
+          <h3>What enforces what — per AI tool</h3>
+          <span class="tag">Matrix · honest scope</span>
+        </div>
+        <p class="diagram-desc">Only Anthropic Claude Code publishes a managed-config file format an MDM admin can push to endpoints today. For every other tool, enforcement is vendor admin + per-repo drop-in + OS-level + corporate proxy. The four <strong>universal controls</strong> (Dev Drive / TCC / firejail · proxy egress · app allow-list · pre-flight) apply identically across all of them.</p>
+
+        <div style="overflow-x:auto;margin-top:10px">
+          <table class="crosswalk" style="font-size:12.5px">
+            <thead>
+              <tr>
+                <th>Tool</th>
+                <th>Vendor admin (web)</th>
+                <th>Per-repo drop-in</th>
+                <th>Managed file (MDM-deployable)</th>
+                <th>Universal controls apply</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Anthropic Claude Code</strong></td>
+                <td>docs.anthropic.com → Claude Code IAM</td>
+                <td><code>.claude/settings.json</code></td>
+                <td style="color:#047857;font-weight:600">Yes — managed-settings.json</td>
+                <td>Yes</td>
+              </tr>
+              <tr>
+                <td><strong>GitHub Copilot</strong></td>
+                <td>GitHub Enterprise → Settings → Copilot → Policies</td>
+                <td><code>.github/copilot-instructions.md</code></td>
+                <td style="color:#b45309;font-weight:600">No — admin policies + per-repo file only</td>
+                <td>Yes</td>
+              </tr>
+              <tr>
+                <td><strong>OpenAI Codex CLI</strong></td>
+                <td>platform.openai.com → Project / API keys</td>
+                <td><code>.codex/instructions.md</code></td>
+                <td style="color:#b45309;font-weight:600">No — per-user <code>~/.codex/config.toml</code> only</td>
+                <td>Yes</td>
+              </tr>
+              <tr>
+                <td><strong>Cursor</strong></td>
+                <td>Cursor admin (Business/Enterprise plan)</td>
+                <td><code>.cursorrules</code></td>
+                <td style="color:#b45309;font-weight:600">No — per-user <code>~/.cursor/settings.json</code> only</td>
+                <td>Yes</td>
+              </tr>
+              <tr>
+                <td><strong>ChatGPT desktop</strong></td>
+                <td>OpenAI workspace admin</td>
+                <td>—</td>
+                <td style="color:#dc2626;font-weight:600">No — admin console only</td>
+                <td>Yes</td>
+              </tr>
+              <tr>
+                <td><strong>M365 Copilot</strong></td>
+                <td>Microsoft 365 admin centre + Intune</td>
+                <td>Sensitivity labels per-document</td>
+                <td style="color:#047857;font-weight:600">Yes — Purview / Intune policies</td>
+                <td>Yes</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p style="font-size:13px;color:var(--text-soft);margin-top:14px;line-height:1.65"><strong>The kit ships drop-in templates</strong> for each per-repo file (Copilot instructions, Cursor rules, Codex project instructions) under <code>templates/per-tool/</code>. The four universal controls are governed by <code>endpoint-policy/policy.yaml</code> and apply uniformly to every tool listed above.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- TEMPLATES -->
+  <section id="templates">
+    <div class="container">
+      <div class="section-head">
+        <div class="kicker">Templates</div>
+        <h2>Eight Office templates. The policy, control and SDLC backbone.</h2>
+        <p>Open them, find-and-replace the placeholders ([Organization Name], [Document Owner], etc.) — or use the Customisation Wizard above to do it in one click — then have your security and legal teams review, and ship. Generic by design — no proprietary brand or vendor names.</p>
+      </div>
+
+      <div class="templates-grid">
+
+        <div class="template-card">
+          <span class="ribbon">Policy</span>
+          <h3>AI Usage &amp; Governance Standard</h3>
+          <div class="desc">The controlling document for AI use in your organisation. Covers scope, risk categories, requirements for tool use, approval flows, agentic AI controls, and a full cross-framework mapping.</div>
+          <ul>
+            <li>18 pages, plain-English with mapped controls</li>
+            <li>Sections for agentic AI, MCP, scheduled tasks, browser use</li>
+            <li>Includes glossary and appendix B framework crosswalk</li>
+          </ul>
+          <div class="actions">
+            <a class="btn btn-primary" href="templates/AI-Usage-Governance-Standard-v1.0.docx" download>Download</a>
+            <span class="filetype">DOCX</span>
+          </div>
+        </div>
+
+        <div class="template-card">
+          <span class="ribbon">Workbook</span>
+          <h3>AI Tool Risk Assessment</h3>
+          <div class="desc">A scoring workbook for vetting any AI tool — generative, agentic, code, productivity, or analytics. Vendor due-diligence, connector / plugin / skill / MCP / agent assessments, all wired to a Likelihood × Impact risk matrix.</div>
+          <ul>
+            <li>10 sheets, automatic risk scoring, conditional formatting</li>
+            <li>41-question vendor DD with weighted scoring</li>
+            <li>Decision log with approver and review-date tracking</li>
+          </ul>
+          <div class="actions">
+            <a class="btn btn-primary" href="templates/AI-Tool-Risk-Assessment-v1.0.xlsx" download>Download</a>
+            <span class="filetype">XLSX</span>
+          </div>
+        </div>
+
+        <div class="template-card">
+          <span class="ribbon">Workbook</span>
+          <h3>AI Hardening &amp; Technical Controls</h3>
+          <div class="desc">A 44-control hardening catalogue plus per-tool playbooks for ChatGPT, Claude, GitHub Copilot, M365 Copilot, Azure AI Foundry, and Databricks Genie. Maturity dashboard auto-calculates coverage.</div>
+          <ul>
+            <li>Master controls catalogue + 6 tool-specific playbooks</li>
+            <li>Auto-calculated maturity score (Implemented + 50% Partial)</li>
+            <li>Per-control mapping to OWASP / NIST / ISO / ATLAS</li>
+          </ul>
+          <div class="actions">
+            <a class="btn btn-primary" href="templates/AI-Hardening-Controls-v1.0.xlsx" download>Download</a>
+            <span class="filetype">XLSX</span>
+          </div>
+        </div>
+
+        <div class="template-card">
+          <span class="ribbon">Policy</span>
+          <h3>AI Acceptable Use &amp; Incident Playbook</h3>
+          <div class="desc">A short, plain-English AUP that every employee can read in five minutes, plus an incident-response playbook your SOC can run. Severity matrix, first-response checklist, containment actions, and post-incident review template.</div>
+          <ul>
+            <li>End-user friendly green / amber / red use lists</li>
+            <li>P1–P4 severity definitions with response targets</li>
+            <li>Indicators-of-compromise list specific to AI</li>
+          </ul>
+          <div class="actions">
+            <a class="btn btn-primary" href="templates/AI-Acceptable-Use-Policy-and-Incident-Playbook-v1.0.docx" download>Download</a>
+            <span class="filetype">DOCX</span>
+          </div>
+        </div>
+
+        <div class="template-card">
+          <span class="ribbon">Runbook</span>
+          <h3>AI-Built App Promotion Runbook</h3>
+          <div class="desc">The mandatory promotion path for AI-generated applications: six gated stages from generation to production, with named owners, exit criteria, and printable sign-off forms. Maps to NIST SSDF, SLSA, and ISO/IEC 5338.</div>
+          <ul>
+            <li>Six stages with hard gates and sign-off forms</li>
+            <li>Sandbox + security review mandatory before prod</li>
+            <li>SLSA L3 + cosign + CycloneDX AI/ML BOM required</li>
+          </ul>
+          <div class="actions">
+            <a class="btn btn-primary" href="templates/AI-Built-App-Promotion-Runbook-v1.0.docx" download>Download</a>
+            <span class="filetype">DOCX</span>
+          </div>
+        </div>
+
+        <div class="template-card" id="llm-guardrails">
+          <span class="ribbon">Guardrails</span>
+          <h3>LLM Application Development Guardrails</h3>
+          <div class="desc">For when you're <em>building</em> an application that calls an LLM (RAG, chatbot, agent, summariser). Covers the full stack: input validation, prompt-injection mitigation, RAG ACL preservation, output filtering, agentic scoping, observability, evaluation harness — plus a 39-item pre-deploy checklist.</div>
+          <ul>
+            <li>Use-case classification (T0–T4) drives control selection</li>
+            <li>Mapped to OWASP LLM Top 10 (2025), every ID covered</li>
+            <li>Tooling table — Lakera / NeMo / Presidio / Azure AI / etc.</li>
+          </ul>
+          <div class="actions">
+            <a class="btn btn-primary" href="templates/LLM-Application-Development-Guardrails-v1.0.docx" download>Download</a>
+            <span class="filetype">DOCX</span>
+          </div>
+        </div>
+
+        <div class="template-card">
+          <span class="ribbon">Checklist</span>
+          <h3>AI Code Review Checklist</h3>
+          <div class="desc">What a security engineer actually checks on an AI-generated PR. Ten sections, around sixty checks, mapped to OWASP LLM Top 10 (2025), OWASP ML Top 10, CWE Top 25, and the NCSC / CISA Guidelines for Secure AI System Development.</div>
+          <ul>
+            <li>Sections cover provenance, auth, input validation, crypto, supply chain, AI-specific failure modes, sandbox pen-test</li>
+            <li>Triage scale + reviewer summary + sign-off block</li>
+            <li>Used at stage 4 of the Promotion Runbook</li>
+          </ul>
+          <div class="actions">
+            <a class="btn btn-primary" href="templates/AI-Code-Review-Checklist-v1.0.docx" download>Download</a>
+            <span class="filetype">DOCX</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ENDPOINT & SDLC -->
+  <section id="endpoint" style="background:var(--surface-2);border-bottom:1px solid var(--border)">
+    <div class="container">
+      <div class="section-head">
+        <div class="kicker">Endpoint &amp; SDLC</div>
+        <h2>Contain AI coding tools on the metal — then promote what they build.</h2>
+        <p>Two operational layers most starter kits skip. The Endpoint Hardening Profile enforces Claude Code via the published <code>managed-settings.json</code> policy and contains the rest (Codex, Copilot CLI, Cursor, ChatGPT desktop) at the OS layer — TCC on macOS, AppLocker on Windows, firejail on Linux — plus a deny-by-default proxy egress policy applied at your SSE / corporate proxy. The CI / sandbox bundle then gates anything they produce through SAST, SBOM, signing, an isolated sandbox, and a security review before it reaches prod.</p>
+      </div>
+
+      <div class="templates-grid">
+
+        <div class="template-card">
+          <span class="ribbon">Policy as code</span>
+          <h3>Endpoint Hardening Profile</h3>
+          <div class="desc">A YAML source-of-truth + a Python emitter that produces vendor-native enforcement files: <code>managed-settings.json</code> + <code>managed-mcp.json</code> for Claude, AppLocker XML for Windows, TCC mobileconfig for macOS, firejail profile for Linux, and an egress allow-list for your proxy. Validated against a JSON Schema before emit.</div>
+          <ul>
+            <li>One YAML — six emitted artefacts</li>
+            <li>JSON Schema validation</li>
+            <li>Pairs with a pre-flight verification script (bash + PowerShell)</li>
+          </ul>
+          <div class="actions">
+            <a class="btn btn-primary" href="templates/endpoint-policy/policy.yaml" download>policy.yaml</a>
+            <a class="btn btn-ghost" href="templates/endpoint-policy/emit.py" download>emit.py</a>
+            <a class="btn btn-ghost" href="templates/endpoint-policy/policy.schema.json" download>schema</a>
+          </div>
+        </div>
+
+        <div class="template-card">
+          <span class="ribbon">Verification</span>
+          <h3>Pre-flight check scripts</h3>
+          <div class="desc">Run on login (or via a 24-hour cron) to verify the endpoint is in the right state — working folder present, managed-config files in place, egress proxy live, AppLocker enforced, sensitive env vars not loaded, AI processes inventoried. Emits JSON to stdout and optionally posts to your SIEM webhook.</div>
+          <ul>
+            <li><code>aigov-preflight.sh</code> — macOS / Linux</li>
+            <li><code>aigov-preflight.ps1</code> — Windows</li>
+            <li>Exit codes: 0 pass · 1 warn · 2 fail</li>
+          </ul>
+          <div class="actions">
+            <a class="btn btn-primary" href="templates/scripts/aigov-preflight.sh" download>aigov-preflight.sh</a>
+            <a class="btn btn-ghost" href="templates/scripts/aigov-preflight.ps1" download>.ps1</a>
+          </div>
+        </div>
+
+        <div class="template-card">
+          <span class="ribbon">Runbook</span>
+          <h3>Intune Endpoint Deployment Guide</h3>
+          <div class="desc">A printable companion to the on-page wizard. Step-by-step Intune deployment for both macOS and Windows 11, including exact menu paths, script bodies, ASR rule GUIDs, and Day-2 ops (drift detection, exception handling, roll-back).</div>
+          <ul>
+            <li>macOS: APFS volume, TCC profile, managed-settings, proxy, launchd</li>
+            <li>Windows 11: Dev Drive, AppLocker, ASR, Web Content Filtering, Remediations</li>
+            <li>Day-2: drift dashboards, exceptions, roll-back</li>
+          </ul>
+          <div class="actions">
+            <a class="btn btn-primary" href="templates/Intune-Endpoint-Deployment-Guide-v1.0.docx" download>Download</a>
+            <span class="filetype">DOCX</span>
+          </div>
+        </div>
+
+        <div class="template-card">
+          <span class="ribbon">Sandbox</span>
+          <h3>Sandbox Reference Architecture</h3>
+          <div class="desc">Two ready-to-deploy sandbox stacks. Cloudflare-native (Pages + Workers + Access + auto-expiring Worker) for SaaS / mid-market. Self-hosted Docker Compose (OAuth2-Proxy + Vector + Falco + egress firewall) for regulated environments. Both isolate the AI-built app from production data and networks.</div>
+          <ul>
+            <li><code>wrangler.toml</code> — Cloudflare deploy</li>
+            <li><code>docker-compose.yml</code> — self-hosted stack with capability-hardened containers, tinyproxy egress firewall, internal-only networks</li>
+            <li>14-day auto-expiry, SSO-only access, full request logging</li>
+          </ul>
+          <div class="actions">
+            <a class="btn btn-primary" href="templates/sandbox/wrangler.toml" download>wrangler.toml</a>
+            <a class="btn btn-ghost" href="templates/sandbox/docker-compose.yml" download>compose</a>
+          </div>
+        </div>
+
+        <div class="template-card">
+          <span class="ribbon">Container + K8s</span>
+          <h3>Dockerfile + Kubernetes hardening</h3>
+          <div class="desc">A hardened multi-stage <code>Dockerfile.template</code> (distroless final image, non-root, HEALTHCHECK, OCI labels) and a <code>k8s/</code> directory with a production-ready Deployment + ServiceAccount + NetworkPolicy + five Kyverno cluster policies (image-signature verification via cosign, deny privileged / host-namespaces / default-SA, require resource limits + non-root + read-only-root, require image digests, harden default ServiceAccount). Aligned to NSA / CISA Kubernetes Hardening Guide v1.2, Pod Security Standards (restricted), and CIS Kubernetes Benchmark.</div>
+          <ul>
+            <li><code>Dockerfile.template</code> — distroless, non-root, multi-stage</li>
+            <li><code>k8s/deployment.yaml</code> + <code>networkpolicy.yaml</code> — restricted PSS + default-deny + targeted egress</li>
+            <li><code>k8s/kyverno-policies.yaml</code> — five admission policies enforcing the above</li>
+          </ul>
+          <div class="actions">
+            <a class="btn btn-primary" href="templates/sandbox/Dockerfile.template" download>Dockerfile</a>
+            <a class="btn btn-ghost" href="templates/sandbox/k8s/deployment.yaml" download>deployment</a>
+            <a class="btn btn-ghost" href="templates/sandbox/k8s/networkpolicy.yaml" download>netpol</a>
+            <a class="btn btn-ghost" href="templates/sandbox/k8s/kyverno-policies.yaml" download>kyverno</a>
+          </div>
+        </div>
+
+        <div class="template-card">
+          <span class="ribbon">CI gates</span>
+          <h3>Pre-commit hooks &amp; CI workflow</h3>
+          <div class="desc">Drop-in <code>.pre-commit-config.yaml</code> and a GitHub Actions workflow that enforces stage 2 of the Promotion Runbook: secrets, SAST (with AI-failure-mode rules), dependency CVEs, licence scan, container scan, CycloneDX SBOM with the AI/ML extension, SLSA L3 provenance, and cosign signing.</div>
+          <ul>
+            <li>Pre-commit: gitleaks, trufflehog, semgrep, AI-coauthor detector</li>
+            <li>CI: 8 parallel gates + signed build artefacts (secrets · SAST · dep CVE · licence · SBOM · container · build+attest+sign · SLSA L3 provenance)</li>
+            <li>Custom Semgrep rule pack for AI failure modes</li>
+          </ul>
+          <div class="actions">
+            <a class="btn btn-primary" href="templates/ci/.pre-commit-config.yaml" download>pre-commit</a>
+            <a class="btn btn-ghost" href="templates/ci/ai-app-gates.yml" download>GH Actions</a>
+            <a class="btn btn-ghost" href="templates/ci/semgrep-ai-rules.yml" download>semgrep rules</a>
+          </div>
+        </div>
+
+        <div class="template-card">
+          <span class="ribbon">Tool catalogue</span>
+          <h3>CI / SDLC Tool Catalogue — suggestions, not requirements</h3>
+          <div class="desc">A landscape map of 14 tool categories — secrets · SAST · AI PR review · SCA · licence · container · IaC · DAST · SBOM · signing · eval harness · K8s admission · K8s runtime · ASPM — with every option tagged 🟢 Free/OSS, 🟡 Free tier + Paid, or 🔴 Paid only. Two ready-made stacks at the bottom: a free-only OSS stack for day-one with zero procurement, and a common enterprise stack if you already pay for SonarCloud, Snyk, Checkmarx, Sysdig, Apiiro etc. The kit's reference workflow uses the free stack — substitute freely, none of these tools is enforced.</div>
+          <ul>
+            <li>14 categories, every tool licence-tagged at a glance</li>
+            <li>Free-only stack + common enterprise stack side-by-side</li>
+            <li><code>optional-gates.yml</code> wires SonarCloud, CodeQL (GHAS), CodeRabbit, Snyk, Checkov, Promptfoo as drop-in jobs</li>
+          </ul>
+          <div class="actions">
+            <a class="btn btn-primary" href="templates/ci/TOOL_CATALOG.md" download>Tool catalogue</a>
+            <a class="btn btn-ghost" href="templates/ci/optional-gates.yml" download>optional-gates.yml</a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP-BY-STEP GUIDES -->
+  <section id="guides">
+    <div class="container">
+      <div class="section-head">
+        <div class="kicker">Step-by-step guides</div>
+        <h2>Walk through it. Don't read a 30-page doc.</h2>
+        <p>Two guided flows. The first protects every developer endpoint with an enforced policy via Microsoft Intune; the second runs every AI-built application through a six-stage promotion path before it reaches production. Pick a tab, follow the numbered steps, tick off as you go.</p>
+        <p style="font-size:14px;color:var(--text-muted);margin-top:14px;line-height:1.65"><strong style="color:var(--red)">Note on Intune navigation:</strong> Microsoft refreshes the Intune admin centre and the Microsoft Defender XDR portal frequently. Menu paths quoted below reflect the layout at the time of writing — feature names are the stable signal, not the breadcrumbs. If a path doesn't match what you see in your tenant, use the portal's top search box, then verify against the current Microsoft Learn documentation before deploying.</p>
+      </div>
+
+      <!-- ============ GUIDE 1: ENDPOINT PROTECTION ============ -->
+      <div class="guide" id="g-endpoint-guide">
+        <div class="guide-head">
+          <h3>Protect endpoint for safe usage of AI tools</h3>
+          <span class="badge">Microsoft Intune · macOS &amp; Windows 11</span>
+        </div>
+        <div class="guide-tabs" data-guide="endpoint">
+          <button class="guide-tab active" data-target="g-mac">macOS</button>
+          <button class="guide-tab" data-target="g-win">Windows 11</button>
+        </div>
+        <div class="guide-content">
+
+          <!-- macOS -->
+          <div class="guide-panel active" id="g-mac">
+            <ol class="steps-list">
+              <li><div class="step-body">
+                <h4>Generate the policy artefacts</h4>
+                <p>Clone or download this project. Tailor <code>templates/endpoint-policy/policy.yaml</code> with your organisation's allow-lists, then validate and emit:</p>
+                <p><span class="nav-path">cd templates/endpoint-policy &amp;&amp; pip install pyyaml jsonschema &amp;&amp; python3 emit.py</span></p>
+                <p>You'll get an <code>out/macos/aigov-tcc.mobileconfig</code>, an <code>out/claude/managed-settings.json</code> + <code>managed-mcp.json</code>, and an <code>out/common/policy.json</code> for the pre-flight script.</p>
+                <a class="step-link" href="templates/endpoint-policy/policy.yaml" download>↓ policy.yaml</a>
+                &nbsp;·&nbsp;
+                <a class="step-link" href="templates/endpoint-policy/emit.py" download>↓ emit.py</a>
+              </div></li>
+
+              <li><div class="step-body">
+                <h4>Provision a dedicated APFS sandbox volume on every Mac</h4>
+                <p>Intune doesn't create APFS volumes natively, so deploy a one-shot shell script.</p>
+                <p><strong>Intune:</strong> <span class="nav-path">Devices → Scripts and remediations → Add → macOS → Shell script</span></p>
+                <p>Upload a script that resolves the boot APFS container (Apple Silicon Macs are not always on <code>disk1</code>) then adds the volume:</p>
+                <p><span class="nav-path">CONTAINER=$(diskutil apfs list | awk '/Container Reference:/ {print $NF; exit}'); diskutil apfs addVolume "$CONTAINER" APFS AIWorkspaces -size 100G</span></p>
+                <p>Then create the working folder at <code>/Volumes/AIWorkspaces/ai-workspaces</code>. Set "Run script as signed-in user = No"; "Hide notifications = Yes"; assign to your developer device group.</p>
+                <ul>
+                  <li>Verification: on a target Mac, <code>diskutil list</code> shows the new APFS volume.</li>
+                </ul>
+              </div></li>
+
+              <li><div class="step-body">
+                <h4>Push the TCC configuration profile</h4>
+                <p>This denies AI desktop apps access to Documents, Desktop, Downloads, and the rest of the home directory — they may only see the sandbox volume.</p>
+                <p><strong>Intune:</strong> <span class="nav-path">Devices → Configuration → Create profile → macOS → Templates → Custom</span></p>
+                <p>Open <code>aigov-tcc.mobileconfig</code>: replace each <code>__REPLACE_WITH_CODESIGN_DESIGNATED_REQUIREMENT__</code> placeholder with the actual designated requirement string captured via <code>codesign -dr - /Applications/Claude.app</code>. Verify each bundle ID against your fleet (use <code>mdls -name kMDItemCFBundleIdentifier /Applications/&lt;App&gt;.app</code>). macOS 11+ silently ignores TCC entries lacking a valid CodeRequirement. Assign to the developer device group.</p>
+                <ul>
+                  <li>Verification (correct method): on a target Mac, drag a file from <code>~/Documents</code> into Claude — Claude shows a Finder access denial. Or run <code>log stream --predicate 'subsystem == "com.apple.TCC"'</code> to observe denials in real time.</li>
+                </ul>
+              </div></li>
+
+              <li><div class="step-body">
+                <h4>Deploy Claude Code managed-settings.json</h4>
+                <p>Pushes the file, MCP and network policies you defined in YAML into the machine-wide path Claude Code's enterprise policy reads. <strong>Note:</strong> Claude Desktop uses a different mechanism — OS-level controls (the TCC profile in step 3 + the proxy in step 5) govern it.</p>
+                <p><strong>Intune:</strong> <span class="nav-path">Devices → Scripts and remediations → Add → macOS → Shell script</span></p>
+                <p>Upload a script that copies <code>managed-settings.json</code> to <code>/Library/Application Support/ClaudeCode/managed-settings.json</code> with permissions <code>0644</code>, owner <code>root:wheel</code>. Set "Run script as signed-in user = No"; assign to the developer device group.</p>
+                <ul>
+                  <li>Verification: <code>sudo cat "/Library/Application Support/ClaudeCode/managed-settings.json"</code> on a target Mac.</li>
+                  <li>Verify field names against Anthropic's current Claude Code enterprise policy docs before broad rollout.</li>
+                </ul>
+              </div></li>
+
+              <li><div class="step-body">
+                <h4>Force outbound traffic through the corporate proxy</h4>
+                <p>Configures system-wide proxy so AI tools can only reach the allow-listed model APIs and registries.</p>
+                <p><strong>Intune:</strong> <span class="nav-path">Devices → Configuration → Create profile → macOS → Settings catalog → search "proxy"</span> — configure HTTP / HTTPS global proxy. For tenants without the settings catalog version, use <span class="nav-path">macOS → Templates → Custom</span> and upload a global proxy <code>.mobileconfig</code> with payload type <code>com.apple.proxies.http.global</code>.</p>
+                <p>Set the auto-config URL or static proxy + port to point at your SSE / Zscaler / Squid. Apply the egress allow-list (<code>out/windows/network-allow-list.txt</code> works for any proxy that takes a flat list) on the proxy itself.</p>
+              </div></li>
+
+              <li><div class="step-body">
+                <h4>Schedule the pre-flight script as a launchd job</h4>
+                <p>Verifies on every login + every 24h that the policy is in force, posts JSON to your SIEM.</p>
+                <p><strong>Intune:</strong> <span class="nav-path">Devices → Scripts and remediations → Add → macOS → Shell script</span></p>
+                <p>Upload a script that drops <code>aigov-preflight.sh</code> to <code>/usr/local/bin/</code> and writes a launchd <code>.plist</code> at <code>/Library/LaunchAgents/com.aigov.preflight.plist</code> running every 86400 seconds.</p>
+                <a class="step-link" href="templates/scripts/aigov-preflight.sh" download>↓ aigov-preflight.sh</a>
+              </div></li>
+
+              <li><div class="step-body">
+                <h4>Verify on a test device</h4>
+                <p>Run the pre-flight by hand on a freshly-enrolled Mac:</p>
+                <p><span class="nav-path">/usr/local/bin/aigov-preflight.sh --webhook https://siem.your-org.com/ingest/aigov</span></p>
+                <p>You should see all checks pass. The same JSON should land in your SIEM.</p>
+                <ul>
+                  <li>If any check fails, fix it before rolling out widely. Test cohort first; production cohort last.</li>
+                </ul>
+              </div></li>
+            </ol>
+          </div>
+
+          <!-- Windows 11 -->
+          <div class="guide-panel" id="g-win">
+            <ol class="steps-list">
+              <li><div class="step-body">
+                <h4>Generate the policy artefacts</h4>
+                <p>Same as macOS step 1 — run <code>emit.py</code> after tailoring <code>policy.yaml</code>. You'll get <code>out/windows/applocker.xml</code>, <code>out/windows/network-allow-list.txt</code>, <code>out/claude/managed-settings.json</code> + <code>managed-mcp.json</code>, and <code>out/common/policy.json</code>.</p>
+                <a class="step-link" href="templates/endpoint-policy/policy.yaml" download>↓ policy.yaml</a>
+                &nbsp;·&nbsp;
+                <a class="step-link" href="templates/endpoint-policy/emit.py" download>↓ emit.py</a>
+              </div></li>
+
+              <li><div class="step-body">
+                <h4>Provision a Windows 11 Dev Drive on every endpoint</h4>
+                <p>Dev Drive (ReFS) provides the trusted boundary for AI working folders and gives developers measurable performance gains as a bonus.</p>
+                <p><strong>Intune:</strong> <span class="nav-path">Devices → Scripts and remediations → Add → Windows 10 and later → PowerShell script</span></p>
+                <p>Upload a script that runs <code>New-VHD</code> + <code>Mount-VHD</code> + <code>Initialize-Disk</code> + <code>New-Partition</code> + <code>Format-Volume -FileSystem ReFS -DevDrive</code> creating <code>D:\ai-workspaces</code>. Then configure the Dev Drive antivirus filter list — the exact filter names depend on the AV / EDR you run (e.g. <code>WdFilter</code> for Microsoft Defender, <code>MsSense.sys</code> for Defender for Endpoint). Use <code>fsutil devdrv setfiltered &lt;comma-separated-filter-list&gt;</code>; verify the current filter names against the Microsoft Learn Dev Drive docs before deploying. Without this step, Dev Drive's perf and security promises aren't realised. Run as system; 64-bit; assign to the developer device group.</p>
+                <ul>
+                  <li>Requires Windows 11 22H2 or later. Verify with <code>Get-Volume | ? FileSystemType -eq ReFS</code> and <code>fsutil devdrv query D:</code>.</li>
+                </ul>
+              </div></li>
+
+              <li><div class="step-body">
+                <h4>Deploy the AppLocker policy</h4>
+                <p>Restricts AI executables to the Dev Drive and denies them on system / personal locations.</p>
+                <p><strong>Intune:</strong> <span class="nav-path">Devices → Configuration → Create profile → Windows 10 and later → Templates → Custom</span></p>
+                <p>Add an OMA-URI setting:</p>
+                <ul>
+                  <li>OMA-URI: <code>./Vendor/MSFT/AppLocker/ApplicationLaunchRestrictions/AIGov/EXE/Policy</code></li>
+                  <li>Data type: String</li>
+                  <li>Value: paste the inner <code>RuleCollection</code> XML from <code>applocker.xml</code> for the Exe rule collection (matching Microsoft's CSP schema).</li>
+                </ul>
+                <p>Repeat for Script (use <em>EnforcementMode = AuditOnly</em> during pilot, flip once telemetry is clean). Note: Intune's <em>Endpoint security → Application control for Business</em> blade uses the WDAC schema, not AppLocker — push AppLocker through the Custom OMA-URI route.</p>
+                <ul>
+                  <li>Verification: try to launch an AI tool from <code>%USERPROFILE%\Documents</code> — Windows blocks it; AppLocker event log under <em>Microsoft-Windows-AppLocker / EXE and DLL</em> shows the deny.</li>
+                </ul>
+              </div></li>
+
+              <li><div class="step-body">
+                <h4>Enable Defender ASR rules</h4>
+                <p>Stops the secondary attack surface that AI tool compromise typically pivots through.</p>
+                <p><strong>Intune:</strong> <span class="nav-path">Endpoint security → Attack surface reduction → Create policy → Windows 10/11 → Attack surface reduction rules</span></p>
+                <p>Enable the following at <em>Block</em>:</p>
+                <ul>
+                  <li>Block credential stealing from lsass (<code>9E6C4E1F-7D60-472F-BA1A-A39EF669E4B2</code>)</li>
+                  <li>Block process creations from PSExec and WMI (<code>D1E49AAC-8F56-4280-B9BA-993A6D77406C</code>)</li>
+                  <li>Block executable content from email and webmail (<code>BE9BA2D9-53EA-4CDC-84E5-9B1EEEE46550</code>)</li>
+                  <li>Block untrusted and unsigned processes from running from USB (<code>B2B3F03D-6A65-4F7B-A9C7-1C7EF74A9BA4</code>)</li>
+                </ul>
+              </div></li>
+
+              <li><div class="step-body">
+                <h4>Push the network egress allow-list</h4>
+                <p>The primary egress control should be your corporate proxy / Secure Service Edge — Zscaler, Netskope, Cloudflare Gateway, Squid, or equivalent. Apply the allow-list there. Intune doesn't natively do URL allow-listing well; use it to <em>force traffic through</em> the proxy.</p>
+                <p><strong>Force-proxy on Windows endpoints:</strong> the most reliable approach in 2026 is the corporate SSE / proxy agent itself (Zscaler Client Connector, Netskope Client, Cloudflare WARP). For Intune-only setups, configure a system-wide proxy via the Intune <span class="nav-path">Settings catalog</span> (search 'proxy' when authoring a Windows 10/11 configuration profile) — verify the exact setting names against the current Microsoft Learn documentation, since the catalog refreshes regularly.</p>
+                <p><strong>Optional complementary control — Microsoft Defender Web Content Filtering:</strong> configure URL category / domain blocking in the Microsoft Defender portal at <code>security.microsoft.com</code> → Endpoints → Rules → Web content filtering. Note: requires Microsoft Defender for Endpoint P1 or P2 licence and only enforces on Edge / Chrome on managed devices. This is not a substitute for the corporate proxy.</p>
+                <p><a class="step-link" href="templates/endpoint-policy/policy.yaml" download>↓ policy.yaml</a> contains the canonical allow-list; the emit step produces <code>network-allow-list.txt</code> in a flat format most proxies accept.</p>
+              </div></li>
+
+              <li><div class="step-body">
+                <h4>Deploy Claude Code managed-settings.json</h4>
+                <p>Pushes the file, MCP and network policies into the machine-wide Claude Code policy path. <strong>Note:</strong> Claude Desktop uses a different mechanism — OS-level controls (AppLocker + the proxy) govern it.</p>
+                <p><strong>Intune:</strong> <span class="nav-path">Devices → Scripts and remediations → Add → Windows 10 and later → PowerShell script</span></p>
+                <p>Upload a script that copies <code>managed-settings.json</code> to <code>C:\ProgramData\ClaudeCode\managed-settings.json</code> (machine-wide). Run as: <em>System</em>; 64-bit.</p>
+                <ul>
+                  <li>Verification: <code>Get-Content "$env:ProgramData\ClaudeCode\managed-settings.json"</code> on a target endpoint.</li>
+                  <li>Verify field names against Anthropic's current Claude Code enterprise policy docs before broad rollout.</li>
+                </ul>
+              </div></li>
+
+              <li><div class="step-body">
+                <h4>Schedule the pre-flight as a remediation</h4>
+                <p>Runs on login + every 24h, posts JSON to SIEM, returns exit code 0/1/2 so Intune surfaces health on the device-compliance dashboard.</p>
+                <p><strong>Intune:</strong> <span class="nav-path">Devices → Scripts and remediations</span> → switch to the <em>Remediations</em> tab → <em>Create</em>. (The Remediations tab is a sibling of the Platform scripts tab, not nested below it.)</p>
+                <p>Detection script: <code>aigov-preflight.ps1 -Quiet -Webhook &lt;your-siem&gt;</code>. Remediation script: empty (or trigger a re-deploy of the configs). Schedule: hourly during business hours, daily otherwise.</p>
+                <a class="step-link" href="templates/scripts/aigov-preflight.ps1" download>↓ aigov-preflight.ps1</a>
+              </div></li>
+
+              <li><div class="step-body">
+                <h4>Verify on a test device</h4>
+                <p>From an elevated PowerShell on a freshly-enrolled Windows endpoint:</p>
+                <p><span class="nav-path">.\aigov-preflight.ps1 -Webhook https://siem.your-org.com/ingest/aigov</span></p>
+                <p>Confirm: AppLocker service running, Dev Drive present, ASR rules configured, Claude managed-settings.json present, BitLocker on, no risky env vars, no AI processes running yet. Same JSON should appear in SIEM.</p>
+              </div></li>
+            </ol>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ============ GUIDE 2: SDLC PROMOTION ============ -->
+      <div class="guide" id="g-sdlc-guide">
+        <div class="guide-head">
+          <h3>Promote AI-built apps safely (SDLC)</h3>
+          <span class="badge">six stages · NIST SSDF + SLSA L3</span>
+        </div>
+        <div class="guide-content">
+          <ol class="steps-list">
+
+            <li><div class="step-body">
+              <h4>Stage 0 — Generation</h4>
+              <p><strong>Owner:</strong> Developer.&nbsp; <strong>Exit:</strong> code lands in a feature branch with AI co-author markers.</p>
+              <p>Author works inside the AI working folder enforced by the endpoint policy. AI tool's MCP allow-list, plugin allow-list, and egress controls are in force (verified by pre-flight on login). Commits include the AI co-author marker and preserve the prompt(s) used as a comment block at the top of the PR description.</p>
+            </div></li>
+
+            <li><div class="step-body">
+              <h4>Stage 1 — Self-review</h4>
+              <p><strong>Owner:</strong> Developer.&nbsp; <strong>Exit:</strong> PR opened with self-review checklist completed and AI provenance documented.</p>
+              <p>Walk the entire diff. Read every AI-added line. Look for the predictable failure modes: hardcoded secrets, missing input validation, broken error handling, weak auth/authz checks, dependency hijacking, AI-suggested package names that don't exist (slop-squatting), tautological tests.</p>
+              <a class="step-link" href="templates/AI-Code-Review-Checklist-v1.0.docx" download>↓ Code Review Checklist (use sections 1–8 here)</a>
+            </div></li>
+
+            <li><div class="step-body">
+              <h4>Stage 2 — Pre-merge gates (CI + peer review)</h4>
+              <p><strong>Owner:</strong> CI runner + named human reviewer(s).&nbsp; <strong>Exit:</strong> all required CI checks green AND peer-review approval(s) recorded → PR merges to main.</p>
+              <p><strong>Automated half (CI):</strong> Drop the pre-commit pack at the root of every dev repo, and the GitHub Actions workflow at <code>.github/workflows/ai-app-gates.yml</code>. Branch protection requires every gate to pass: gitleaks + trufflehog (secrets), Semgrep with the AI-rules pack (SAST), OSV-Scanner (deps), ScanCode (licence), Trivy (container, when a Dockerfile is present), Anchore sbom-action / Syft → CycloneDX with structured ML metadata (SBOM), SLSA L3 provenance, cosign keyless signing.</p>
+              <p><strong>Human half (peer review):</strong> branch protection on <code>main</code> requires at least one approving human reviewer (recommend two for changes &gt;50 LoC or that touch security-sensitive paths). CODEOWNERS approval is required for the affected paths. Stale approvals are dismissed on new commits. Auto-merge is disabled. AI-authored PRs (detected by the co-author marker) are flagged for senior reviewer.</p>
+              <a class="step-link" href="templates/ci/.pre-commit-config.yaml" download>↓ pre-commit pack</a>
+              &nbsp;·&nbsp;
+              <a class="step-link" href="templates/ci/ai-app-gates.yml" download>↓ GitHub Actions workflow</a>
+            </div></li>
+
+            <li><div class="step-body">
+              <h4>Stage 3 — Sandbox deploy</h4>
+              <p><strong>Owner:</strong> Platform Engineering.&nbsp; <strong>Exit:</strong> sandbox URL live, SSO-gated, logs flowing.</p>
+              <p>Deploy the artefact to an isolated sandbox tenant. Two reference architectures ship with this kit. Cloudflare-native: <code>wrangler deploy</code> with the included <code>wrangler.toml</code> + a Cloudflare Access policy in the Zero Trust dashboard requiring the <code>security-reviewers</code> SSO group + compliant device + MFA. Self-hosted: <code>docker compose up -d</code> with the included compose file (OAuth2-Proxy + Vector + Falco). Sandbox carries no production data; egress firewalled to model APIs only; auto-expires after 14 days.</p>
+              <a class="step-link" href="templates/sandbox/wrangler.toml" download>↓ wrangler.toml (Cloudflare)</a>
+              &nbsp;·&nbsp;
+              <a class="step-link" href="templates/sandbox/docker-compose.yml" download>↓ docker-compose.yml (self-hosted)</a>
+            </div></li>
+
+            <li><div class="step-body">
+              <h4>Stage 4 — Security review</h4>
+              <p><strong>Owner:</strong> Security Engineering.&nbsp; <strong>Exit:</strong> checklist complete; High/Critical findings closed or risk-accepted.</p>
+              <p>Reviewer runs the AI Code Review Checklist (all 10 sections). Pen-tests the sandbox URL: auth bypass, IDOR, SSRF, prompt injection (if LLM exposed), excessive agency on agent endpoints. Verifies SBOM and cosign signature. Findings raised in the issue tracker tied to the PR; High/Critical findings closed or formally risk-accepted before sign-off.</p>
+              <a class="step-link" href="templates/AI-Code-Review-Checklist-v1.0.docx" download>↓ Code Review Checklist (full)</a>
+            </div></li>
+
+            <li><div class="step-body">
+              <h4>Stage 5 — Promotion sign-off</h4>
+              <p><strong>Owner:</strong> Security Manager + Product Manager + Engineering Manager.&nbsp; <strong>Exit:</strong> three signatures in the Decision Log.</p>
+              <p>Decision Log entry created with the evidence pack (CI run URL, SBOM, SLSA provenance, sandbox URL, security review checklist, reviewer summary). Three named approvers sign. Expiry date set (default 12 months). Configure your production admission controller (Kyverno / OPA Gatekeeper / Sigstore policy-controller — not shipped with this kit) to verify cosign signatures before allowing deploy.</p>
+              <a class="step-link" href="templates/AI-Built-App-Promotion-Runbook-v1.0.docx" download>↓ Promotion Runbook (Appendix C — Sign-off form)</a>
+            </div></li>
+
+            <li><div class="step-body">
+              <h4>Stage 6 — Production deploy</h4>
+              <p><strong>Owner:</strong> SRE / Platform.&nbsp; <strong>Exit:</strong> post-deploy review filed, oncall briefed.</p>
+              <p>Canary stages 1% → 10% → 50% → 100%. Configure auto-rollback in your deployment platform on the signals you care about (typical: 5xx rate, p95 latency, custom AI-quality KPIs). Observability flowing with the AI-app tag. On-call runbook updated. Post-deploy review at 24h and 7d. Re-evaluation scheduled at 90 days for AI-specific drift.</p>
+            </div></li>
+
+          </ol>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- CONTROL CATALOGUE -->
+  <section id="controls">
+    <div class="container">
+      <div class="section-head">
+        <div class="kicker">Control Catalogue</div>
+        <h2>Browse the universal hardening control set</h2>
+        <p>The 44 controls below are the universal set (Domains A–K) — they apply to every AI tool deployment. The downloadable workbook also includes Domain L (SDLC promotion, 13 controls) and Domain M (LLM application development, 15 controls), bringing the full catalogue to 72. Filter by domain or framework, search by keyword, and use the in-page set as the foundational backlog.</p>
+      </div>
+
+      <div class="controls-toolbar">
+        <input class="search" id="ctl-search" type="search" placeholder="Search controls…" aria-label="Search controls" />
+        <button class="filter-pill active" data-filter="all">All</button>
+        <button class="filter-pill" data-filter="P1 (Critical)">P1 Critical</button>
+        <button class="filter-pill" data-filter="P2 (High)">P2 High</button>
+        <button class="filter-pill" data-filter="P3 (Medium)">P3 Medium</button>
+        <button class="filter-pill" data-filter="LLM01">LLM01 Prompt Injection</button>
+        <button class="filter-pill" data-filter="LLM06">LLM06 Excessive Agency</button>
+      </div>
+
+      <div style="overflow-x:auto">
+        <table class="controls" id="ctl-table">
+          <thead>
+            <tr>
+              <th>ID</th><th>Domain</th><th>Control</th><th>Priority</th><th>Mappings</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p style="margin-top:14px;color:var(--text-muted);font-size:12px;font-family:'JetBrains Mono',monospace;letter-spacing:.06em"><span id="ctl-count"></span></p>
+    </div>
+  </section>
+
+  <!-- CROSSWALK -->
+  <section id="crosswalk">
+    <div class="container">
+      <div class="section-head">
+        <div class="kicker">Framework Crosswalk</div>
+        <h2>One control set, every framework you need to evidence</h2>
+        <p>Each row of the AI Usage Standard maps to specific identifiers across NIST AI RMF, ISO/IEC 42001, EU AI Act, OWASP LLM Top 10 (2025), and MITRE ATLAS. Auditors will recognise these.</p>
+      </div>
+
+      <div style="overflow-x:auto">
+        <table class="crosswalk">
+          <thead>
+            <tr>
+              <th>Section / Risk</th>
+              <th>NIST AI RMF</th>
+              <th>ISO/IEC 42001</th>
+              <th>EU AI Act</th>
+              <th>OWASP LLM Top 10 (2025)</th>
+              <th>MITRE ATLAS</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Programme Governance</strong></td><td>GOVERN-1, GOVERN-3</td><td>Cl. 4–5; A.2.2</td><td>Art. 4</td><td>—</td><td>—</td></tr>
+            <tr><td>Hallucination &amp; Output Reliability</td><td>MEASURE-2.3</td><td>A.6.2.4</td><td>Art. 13</td><td>LLM09</td><td>—</td></tr>
+            <tr><td>Data Leakage</td><td>MANAGE-2.1</td><td>A.7.4</td><td>Art. 10</td><td>LLM02</td><td>Exfiltration</td></tr>
+            <tr><td>IP &amp; Copyright</td><td>GOVERN-3.1</td><td>A.10.3</td><td>Art. 53</td><td>—</td><td>—</td></tr>
+            <tr><td>Bias &amp; Fairness</td><td>MEASURE-2.11</td><td>A.6.2.6</td><td>Art. 10 / 14</td><td>—</td><td>—</td></tr>
+            <tr><td>Human Oversight</td><td>GOVERN-2.1</td><td>A.9.2</td><td>Art. 14</td><td>—</td><td>—</td></tr>
+            <tr><td>Supply Chain &amp; Third-Party Models</td><td>MAP-4.1</td><td>A.10.2</td><td>Art. 25</td><td>LLM03</td><td>ML Supply Chain</td></tr>
+            <tr><td><strong>Agentic AI &amp; Delegated Authority</strong></td><td>MANAGE-1.3</td><td>A.6.2.7</td><td>Art. 14 / 15</td><td>LLM06</td><td>Initial Access · Execution · Exfiltration</td></tr>
+            <tr><td>Prompt Injection</td><td>MEASURE-2.7</td><td>A.6.2.5</td><td>Art. 15</td><td>LLM01</td><td>Prompt Injection</td></tr>
+            <tr><td>Identity &amp; Access</td><td>MANAGE-3.1</td><td>A.6.2.5</td><td>Art. 15</td><td>LLM06 (Excessive Agency)</td><td>Initial Access</td></tr>
+            <tr><td>Logging &amp; Audit</td><td>MEASURE-4.1</td><td>A.6.2.8</td><td>Art. 12</td><td>—</td><td>—</td></tr>
+            <tr><td>Connectors / Plugins / MCP</td><td>MANAGE-1.3</td><td>A.6.2.5 / A.6.2.7</td><td>Art. 15</td><td>LLM03 / LLM05 / LLM06</td><td>ML Supply Chain · Execution</td></tr>
+            <tr><td>Browser Automation</td><td>MANAGE-2.1</td><td>A.6.2.5</td><td>Art. 15</td><td>LLM06</td><td>Initial Access</td></tr>
+            <tr><td>Incident &amp; Exception Management</td><td>MANAGE-2.4</td><td>A.10.4</td><td>Art. 26</td><td>—</td><td>—</td></tr>
+            <tr><td colspan="6" style="background:var(--surface-3);font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-muted);letter-spacing:.12em;text-transform:uppercase;text-align:center;padding:8px 14px">LLM Application Development (Domain M — building apps that call an LLM)</td></tr>
+            <tr><td><strong>RAG source-ACL preservation</strong></td><td>MEASURE-2.4</td><td>A.7.4</td><td>Art. 10</td><td>LLM02 / LLM08</td><td>Exfiltration</td></tr>
+            <tr><td>System prompt protection</td><td>MANAGE-1.3</td><td>A.6.2.6</td><td>Art. 15</td><td>LLM07</td><td>—</td></tr>
+            <tr><td>Output filtering — PII / harm / hallucination</td><td>MEASURE-2.7</td><td>A.6.2.7</td><td>Art. 13 / 15</td><td>LLM05 / LLM09</td><td>—</td></tr>
+            <tr><td>Agentic tool scoping + human-in-the-loop</td><td>MANAGE-1.3</td><td>A.6.2.7</td><td>Art. 14</td><td>LLM06</td><td>Execution</td></tr>
+            <tr><td>Rate limiting + cost ceiling (denial-of-wallet)</td><td>MANAGE-2.1</td><td>A.6.2.7</td><td>Art. 15</td><td>LLM10</td><td>Impact</td></tr>
+            <tr><td>Evaluation harness — red-team + groundedness</td><td>MEASURE-2.7</td><td>A.6.2.6</td><td>Art. 9 / 15</td><td>LLM01 / LLM04 / LLM09</td><td>ML Attack Staging</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- RISKS -->
+  <section id="risks">
+    <div class="container">
+      <div class="section-head">
+        <div class="kicker">Why this matters</div>
+        <h2>The risks that traditional security controls don't cover</h2>
+        <p>AI introduces a new threat surface. The risks below are pulled from the Standard's risk model — and each maps to a control set in the workbook.</p>
+      </div>
+
+      <div class="risks-grid">
+        <article class="risk-card r-prompt">
+          <div class="meta">Highest priority · OWASP LLM01</div>
+          <h3>Prompt Injection</h3>
+          <p>Malicious instructions hidden inside a document, web page, email, or ticket override the user's intent — invisible white-on-white text, encoded HTML, file metadata. Treat every input as potentially adversarial.</p>
+        </article>
+        <article class="risk-card r-leak">
+          <div class="meta">Critical · OWASP LLM02</div>
+          <h3>Data Leakage</h3>
+          <p>Pasting customer PII, credentials, or proprietary code into AI tools. Even with training disabled, content traverses third-party infrastructure. Default to "treat AI like a public URL".</p>
+        </article>
+        <article class="risk-card r-bias">
+          <div class="meta">Material · NIST MEASURE-2.11</div>
+          <h3>Bias &amp; Over-Reliance</h3>
+          <p>Models reflect their training data. Decisions about people — hiring, credit, fraud — must have documented human oversight, fairness testing, and the ability to override.</p>
+        </article>
+        <article class="risk-card r-supply">
+          <div class="meta">Strategic · OWASP LLM03</div>
+          <h3>Supply Chain &amp; Agentic Authority</h3>
+          <p>Agents inherit the user's permissions. Connectors, plugins, MCP servers, and scheduled tasks can act for hours without supervision. The attack scenario is no longer "data disclosed" — it's "workflow executed".</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section id="about">
+    <div class="container">
+      <div class="section-head">
+        <div class="kicker">About</div>
+        <h2>Why this exists</h2>
+        <p>Every organisation now has to govern AI, but most starter packs are paywalled, vendor-locked, or framework-specific. This project pools the practical work of security teams who have already done the hard yards and packages it as a generic, neutral baseline anyone can fork.</p>
+      </div>
+
+      <div class="about-grid">
+        <article class="about-card">
+          <div class="icon">01</div>
+          <h3>Free &amp; permissive</h3>
+          <p>Published under the MIT license. Use, adapt, redistribute, or rebrand for your organisation. No registration, no lead form, no email capture.</p>
+        </article>
+        <article class="about-card">
+          <div class="icon">02</div>
+          <h3>Framework-neutral</h3>
+          <p>Mapped against five frameworks so you can use it whether you live in NIST, ISO, EU, or OWASP terminology — and so the same control evidence covers multiple audits.</p>
+        </article>
+        <article class="about-card">
+          <div class="icon">03</div>
+          <h3>Practitioner-first</h3>
+          <p>Written by people who actually configure AI tenants, not just write policy. The hardening workbook references real settings, not abstract objectives.</p>
+        </article>
+      </div>
+
+      <div class="callout">
+        <h3>Contributing &amp; Feedback</h3>
+        <p>Spotted a control we missed? Disagree with a mapping? File an issue or PR on the GitHub repository. New revisions will be published with a change log so adopters can track what's evolving — particularly as the EU AI Act guidance and ISO/IEC 42002 series mature.</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="container">
+    <div>
+      <div class="brand" style="margin-bottom:14px"><span class="brand-mark">AI</span><span>AI Governance &amp; Hardening</span></div>
+      <p>Open-source AI governance, risk, and hardening templates for any organisation. Mapped to NIST AI RMF, ISO/IEC 42001, EU AI Act, OWASP LLM Top 10 (2025), and MITRE ATLAS.</p>
+      <p style="font-size:12px;margin-top:14px;line-height:1.55">This project is provided as-is, without warranty of any kind. Adapted templates must be reviewed and approved by your own information security, legal, and privacy functions before publication.</p>
+
+      <div class="author-block">
+        <img class="author-photo" src="Author/bazam.jpeg" alt="Bazam Chekrian" loading="lazy" />
+        <div class="author-text">
+          <h4>About the author</h4>
+          <p>Built and maintained by <strong>Bazam Chekrian</strong> — Security Architect with <strong>15+ years</strong> of experience across <strong>Banking, Fintech, Healthcare</strong> and <strong>MSSP</strong>. Works across <strong>DevSecOps</strong>, <strong>AppSec</strong>, <strong>Cloud Security</strong> and hardening — and applies that same engineering discipline to AI governance and risk for enterprise AI tools. This kit pools practitioner work into a generic, framework-aligned baseline anyone can fork and adopt.</p>
+          <a class="author-link" href="https://www.linkedin.com/in/bazamchekrian/" target="_blank" rel="noopener noreferrer">→ Connect on LinkedIn</a>
+        </div>
+      </div>
+    </div>
+    <div>
+      <h4>Documents</h4>
+      <ul>
+        <li><a href="templates/AI-Usage-Governance-Standard-v1.0.docx" download>Governance Standard</a></li>
+        <li><a href="templates/AI-Tool-Risk-Assessment-v1.0.xlsx" download>Risk Assessment</a></li>
+        <li><a href="templates/AI-Hardening-Controls-v1.0.xlsx" download>Hardening Controls</a></li>
+        <li><a href="templates/AI-Acceptable-Use-Policy-and-Incident-Playbook-v1.0.docx" download>AUP &amp; Playbook</a></li>
+        <li><a href="templates/AI-Built-App-Promotion-Runbook-v1.0.docx" download>Promotion Runbook</a></li>
+        <li><a href="templates/AI-Code-Review-Checklist-v1.0.docx" download>Code Review Checklist</a></li>
+        <li><a href="templates/Intune-Endpoint-Deployment-Guide-v1.0.docx" download>Intune Deployment Guide</a></li>
+        <li><a href="templates/LLM-Application-Development-Guardrails-v1.0.docx" download>LLM Dev Guardrails</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>References</h4>
+      <ul>
+        <li><a href="https://www.nist.gov/itl/ai-risk-management-framework" target="_blank" rel="noopener">NIST AI RMF</a></li>
+        <li><a href="https://www.iso.org/standard/81230.html" target="_blank" rel="noopener">ISO/IEC 42001</a></li>
+        <li><a href="https://artificialintelligenceact.eu/" target="_blank" rel="noopener">EU AI Act</a></li>
+        <li><a href="https://genai.owasp.org/" target="_blank" rel="noopener">OWASP GenAI / LLM Top 10</a></li>
+        <li><a href="https://atlas.mitre.org/" target="_blank" rel="noopener">MITRE ATLAS</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="copyright container">
+    <span>MIT LICENSE · GENERIC TEMPLATE V1.0</span>
+    <span>BUILT FOR THE PRACTITIONER COMMUNITY</span>
+  </div>
+</footer>
+
+<script>
+const CONTROLS = [
+  {id:"HRD-A01", domain:"Tenant Governance", title:"Tenant approved, documented owner and SSO bindings recorded.", prio:"P1 (Critical)", maps:[{t:"GOVERN-1.1",c:"nist"},{t:"A.6.2.2",c:"iso"}]},
+  {id:"HRD-A02", domain:"Tenant Governance", title:"Provider configured to NOT train on customer prompts/outputs.", prio:"P1 (Critical)", maps:[{t:"LLM02",c:"owasp"},{t:"MEASURE-2.7",c:"nist"},{t:"A.7.4",c:"iso"}]},
+  {id:"HRD-A03", domain:"Tenant Governance", title:"Region pinning aligned with regulatory footprint.", prio:"P2 (High)", maps:[{t:"MAP-4.1",c:"nist"},{t:"A.7.6",c:"iso"}]},
+  {id:"HRD-A04", domain:"Tenant Governance", title:"Admin roles separated; break-glass account stored in PAM.", prio:"P1 (Critical)", maps:[{t:"LLM07",c:"owasp"},{t:"MANAGE-3.1",c:"nist"},{t:"Initial Access",c:"mitre"}]},
+  {id:"HRD-A05", domain:"Tenant Governance", title:"Service-account / API key rotation policy enforced.", prio:"P2 (High)", maps:[{t:"LLM07",c:"owasp"},{t:"MANAGE-3.1",c:"nist"},{t:"Persistence",c:"mitre"}]},
+  {id:"HRD-B01", domain:"Connectors", title:"Tenant default = deny for connectors; allow-list maintained.", prio:"P1 (Critical)", maps:[{t:"LLM03",c:"owasp"},{t:"LLM06",c:"owasp"},{t:"MANAGE-1.3",c:"nist"},{t:"Execution",c:"mitre"}]},
+  {id:"HRD-B02", domain:"Connectors", title:"Write-scope connectors require named exception with approval.", prio:"P1 (Critical)", maps:[{t:"LLM06",c:"owasp"},{t:"MANAGE-1.3",c:"nist"},{t:"Exfiltration",c:"mitre"}]},
+  {id:"HRD-B03", domain:"Connectors", title:"Browser-automation restricted to approved URL categories.", prio:"P1 (Critical)", maps:[{t:"LLM06",c:"owasp"},{t:"MANAGE-2.1",c:"nist"},{t:"Initial Access",c:"mitre"}]},
+  {id:"HRD-B04", domain:"Connectors", title:"Personal storage / personal email connectors disabled.", prio:"P2 (High)", maps:[{t:"LLM02",c:"owasp"},{t:"A.7.5",c:"iso"}]},
+  {id:"HRD-B05", domain:"Connectors", title:"Connector permissions scoped read-only by default.", prio:"P2 (High)", maps:[{t:"LLM06",c:"owasp"},{t:"A.6.2.7",c:"iso"}]},
+  {id:"HRD-C01", domain:"Plugins", title:"Tenant-wide plugins disabled by default; allow-list maintained.", prio:"P1 (Critical)", maps:[{t:"LLM03",c:"owasp"},{t:"LLM05",c:"owasp"},{t:"ML Supply Chain",c:"mitre"}]},
+  {id:"HRD-C02", domain:"Plugins", title:"Default plugin bundles disabled.", prio:"P2 (High)", maps:[{t:"LLM05",c:"owasp"},{t:"A.6.2.5",c:"iso"}]},
+  {id:"HRD-C03", domain:"Plugins", title:"Plugins reviewed on each version update.", prio:"P3 (Medium)", maps:[{t:"LLM05",c:"owasp"},{t:"A.10.2",c:"iso"}]},
+  {id:"HRD-D01", domain:"Skills", title:"Skill upload restricted to administrators tenant-wide.", prio:"P1 (Critical)", maps:[{t:"LLM01",c:"owasp"},{t:"LLM05",c:"owasp"},{t:"Persistence",c:"mitre"}]},
+  {id:"HRD-D02", domain:"Skills", title:"Global safety skill / system prompt enforced tenant-wide.", prio:"P1 (Critical)", maps:[{t:"LLM01",c:"owasp"},{t:"MEASURE-2.7",c:"nist"},{t:"A.6.2.6",c:"iso"}]},
+  {id:"HRD-D03", domain:"Skills", title:"Skills tested on a small group before tenant rollout.", prio:"P3 (Medium)", maps:[{t:"MEASURE-2.4",c:"nist"}]},
+  {id:"HRD-D04", domain:"Skills", title:"Org-published skills version-controlled and signed.", prio:"P3 (Medium)", maps:[{t:"LLM05",c:"owasp"},{t:"A.10.2",c:"iso"}]},
+  {id:"HRD-E01", domain:"MCP", title:"MCP allow-list enforced via managed configuration (MDM).", prio:"P1 (Critical)", maps:[{t:"LLM05",c:"owasp"},{t:"LLM06",c:"owasp"},{t:"A.6.2.7",c:"iso"}]},
+  {id:"HRD-E02", domain:"MCP", title:"Community / unsigned MCP servers blocked.", prio:"P1 (Critical)", maps:[{t:"LLM05",c:"owasp"},{t:"ML Supply Chain",c:"mitre"}]},
+  {id:"HRD-E03", domain:"MCP", title:"MCP server permissions scoped to least privilege.", prio:"P2 (High)", maps:[{t:"LLM06",c:"owasp"},{t:"Privilege Escalation",c:"mitre"}]},
+  {id:"HRD-F01", domain:"Identity", title:"SSO / SAML / OIDC bound to corporate IdP; phishing-resistant MFA.", prio:"P1 (Critical)", maps:[{t:"LLM07",c:"owasp"},{t:"MANAGE-3.1",c:"nist"},{t:"Initial Access",c:"mitre"}]},
+  {id:"HRD-F02", domain:"Identity", title:"SCIM provisioning / deprovisioning live.", prio:"P1 (Critical)", maps:[{t:"LLM07",c:"owasp"},{t:"A.6.2.5",c:"iso"}]},
+  {id:"HRD-F03", domain:"Identity", title:"Conditional access enforces device compliance.", prio:"P2 (High)", maps:[{t:"LLM07",c:"owasp"},{t:"Initial Access",c:"mitre"}]},
+  {id:"HRD-F04", domain:"Identity", title:"Agent identities (service principals) inventoried.", prio:"P2 (High)", maps:[{t:"LLM06",c:"owasp"},{t:"MAP-1.6",c:"nist"}]},
+  {id:"HRD-G01", domain:"Logging", title:"Tenant audit logs forwarded to SIEM.", prio:"P1 (Critical)", maps:[{t:"LLM06",c:"owasp"},{t:"A.9.4",c:"iso"}]},
+  {id:"HRD-G02", domain:"Logging", title:"Prompt / output content logged to tenant-controlled store.", prio:"P2 (High)", maps:[{t:"LLM02",c:"owasp"},{t:"MEASURE-2.4",c:"nist"}]},
+  {id:"HRD-G03", domain:"Logging", title:"OpenTelemetry traces enabled for agent runs.", prio:"P3 (Medium)", maps:[{t:"MEASURE-2.4",c:"nist"}]},
+  {id:"HRD-G04", domain:"Logging", title:"Detections for prompt-injection and exfiltration patterns.", prio:"P2 (High)", maps:[{t:"LLM01",c:"owasp"},{t:"LLM06",c:"owasp"},{t:"Exfiltration",c:"mitre"}]},
+  {id:"HRD-G05", domain:"Logging", title:"Insider-risk policies tuned for AI use.", prio:"P3 (Medium)", maps:[{t:"A.9.5",c:"iso"}]},
+  {id:"HRD-H01", domain:"DLP", title:"DLP enforces classification on AI inputs and outputs.", prio:"P1 (Critical)", maps:[{t:"LLM02",c:"owasp"},{t:"A.7.5",c:"iso"}]},
+  {id:"HRD-H02", domain:"DLP", title:"Sensitivity labels propagate to AI-generated outputs.", prio:"P2 (High)", maps:[{t:"LLM02",c:"owasp"},{t:"A.7.5",c:"iso"}]},
+  {id:"HRD-H03", domain:"DLP", title:"Pre-flight scrubbing of secrets / API keys in AI inputs.", prio:"P2 (High)", maps:[{t:"LLM02",c:"owasp"},{t:"A.7.5",c:"iso"}]},
+  {id:"HRD-I01", domain:"Endpoint", title:"Approved AI desktop apps allow-listed via EDR.", prio:"P1 (Critical)", maps:[{t:"LLM03",c:"owasp"},{t:"Execution",c:"mitre"}]},
+  {id:"HRD-I02", domain:"Endpoint", title:"Browser extensions allow-listed.", prio:"P2 (High)", maps:[{t:"LLM03",c:"owasp"},{t:"Initial Access",c:"mitre"}]},
+  {id:"HRD-I03", domain:"Endpoint", title:"AI working folder enforced; home directory access denied.", prio:"P1 (Critical)", maps:[{t:"LLM02",c:"owasp"},{t:"LLM06",c:"owasp"},{t:"Discovery",c:"mitre"}]},
+  {id:"HRD-I04", domain:"Endpoint", title:"EDR detections cover AI-specific exfiltration patterns.", prio:"P3 (Medium)", maps:[{t:"LLM06",c:"owasp"},{t:"Exfiltration",c:"mitre"}]},
+  {id:"HRD-J01", domain:"Agentic", title:"Default deny on autonomous external actions in scheduled tasks.", prio:"P1 (Critical)", maps:[{t:"LLM06",c:"owasp"},{t:"MANAGE-1.3",c:"nist"},{t:"Execution",c:"mitre"}]},
+  {id:"HRD-J02", domain:"Agentic", title:"Long-running agent sessions auto-killed after defined window.", prio:"P2 (High)", maps:[{t:"LLM06",c:"owasp"},{t:"Persistence",c:"mitre"}]},
+  {id:"HRD-J03", domain:"Agentic", title:"Tool-call rate limits applied per agent / per user.", prio:"P2 (High)", maps:[{t:"LLM06",c:"owasp"},{t:"Impact",c:"mitre"}]},
+  {id:"HRD-J04", domain:"Agentic", title:"All custom agents have a named owner and recorded purpose.", prio:"P2 (High)", maps:[{t:"MAP-1.6",c:"nist"},{t:"A.6.2.2",c:"iso"}]},
+  {id:"HRD-K01", domain:"People", title:"AI Acceptable Use Policy issued and acknowledged.", prio:"P1 (Critical)", maps:[{t:"GOVERN-3.2",c:"nist"},{t:"A.2.2",c:"iso"}]},
+  {id:"HRD-K02", domain:"People", title:"Annual AI awareness training delivered.", prio:"P2 (High)", maps:[{t:"GOVERN-3.2",c:"nist"},{t:"A.2.4",c:"iso"}]},
+  {id:"HRD-K03", domain:"People", title:"AI Incident Response runbook published and tested.", prio:"P2 (High)", maps:[{t:"MANAGE-2.4",c:"nist"},{t:"A.10.4",c:"iso"}]},
+  {id:"HRD-K04", domain:"People", title:"Named contacts published for AI questions and incidents.", prio:"P3 (Medium)", maps:[{t:"GOVERN-3.2",c:"nist"},{t:"A.10.4",c:"iso"}]},
+];
+
+// stat-controls displays the FULL workbook control count (72 = 44 universal A-K
+// + 13 Domain L SDLC + 15 Domain M LLM Dev); the in-page CONTROLS array
+// covers only the universal set, the rest live in the workbook.
+
+const ctlBody = document.querySelector("#ctl-table tbody");
+const ctlSearch = document.getElementById("ctl-search");
+const ctlCount = document.getElementById("ctl-count");
+let activeFilter = "all";
+
+function badgeClass(c){
+  return c==="owasp"?"badge-owasp":c==="nist"?"badge-nist":c==="iso"?"badge-iso":c==="mitre"?"badge-mitre":"";
+}
+function prioClass(p){
+  if(p.startsWith("P1"))return "badge-prio-P1";
+  if(p.startsWith("P2"))return "badge-prio-P2";
+  if(p.startsWith("P3"))return "badge-prio-P3";
+  return "badge-prio-P4";
+}
+function renderControls(){
+  const q = ctlSearch.value.trim().toLowerCase();
+  const rows = CONTROLS.filter(c=>{
+    if(q && !(c.id.toLowerCase().includes(q) || c.title.toLowerCase().includes(q) || c.domain.toLowerCase().includes(q))) return false;
+    if(activeFilter==="all") return true;
+    if(activeFilter.startsWith("P")) return c.prio.startsWith(activeFilter.split(" ")[0]);
+    return c.maps.some(m=>m.t===activeFilter);
+  });
+  ctlBody.innerHTML = rows.map(c=>`
+    <tr>
+      <td><span class="control-id">${c.id}</span></td>
+      <td>${c.domain}</td>
+      <td>${c.title}</td>
+      <td><span class="badge ${prioClass(c.prio)}">${c.prio}</span></td>
+      <td><div class="badge-list">${c.maps.map(m=>`<span class="badge ${badgeClass(m.c)}">${m.t}</span>`).join("")}</div></td>
+    </tr>`).join("");
+  ctlCount.textContent = `Showing ${rows.length} of ${CONTROLS.length} controls.`;
+}
+ctlSearch.addEventListener("input", renderControls);
+document.querySelectorAll("[data-filter]").forEach(b=>{
+  b.addEventListener("click", ()=>{
+    document.querySelectorAll("[data-filter]").forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");
+    activeFilter = b.dataset.filter;
+    renderControls();
+  });
+});
+renderControls();
+
+const ASSESS = [
+  // Domains A–K — universal SaaS / endpoint controls
+  {id:"HRD-A02", t:"Provider configured NOT to train on prompts / outputs."},
+  {id:"HRD-A04", t:"Admin roles separated; break-glass in PAM."},
+  {id:"HRD-B01", t:"Tenant default = deny for connectors."},
+  {id:"HRD-B02", t:"Write-scope connectors require named exception."},
+  {id:"HRD-B03", t:"Browser-automation block-list for high-risk URLs."},
+  {id:"HRD-C01", t:"Plugins disabled tenant-wide; allow-list only."},
+  {id:"HRD-D01", t:"End-user skill upload disabled."},
+  {id:"HRD-D02", t:"Global safety skill enforced tenant-wide."},
+  {id:"HRD-E01", t:"MCP allow-list enforced via MDM."},
+  {id:"HRD-F01", t:"SSO + phishing-resistant MFA enforced."},
+  {id:"HRD-F02", t:"SCIM provisioning live (deprovisioning <24h)."},
+  {id:"HRD-G01", t:"Audit logs forwarded to SIEM."},
+  {id:"HRD-G04", t:"Detections for prompt-injection and exfiltration."},
+  {id:"HRD-H01", t:"DLP enforces classification on AI inputs / outputs."},
+  {id:"HRD-I01", t:"Approved AI desktop apps allow-listed."},
+  {id:"HRD-I03", t:"AI client limited to a working folder."},
+  {id:"HRD-J01", t:"Scheduled tasks deny external actions by default."},
+  {id:"HRD-K01", t:"AI Acceptable Use Policy issued and acknowledged."},
+  // Domain L — SDLC promotion of AI-built apps
+  {id:"HRD-L05", t:"Mandatory human peer review on every PR before merge to main; auto-merge disabled."},
+  {id:"HRD-L06", t:"CycloneDX SBOM with AI/ML extension produced and pinned at promotion."},
+  {id:"HRD-L13", t:"Branch protection on main: required reviews, CODEOWNERS, status checks, no force-push."},
+  // Domain M — LLM application development guardrails
+  {id:"HRD-M03", t:"Prompt-injection guard wired in front of every LLM call."},
+  {id:"HRD-M06", t:"RAG retrieval enforces user-level ACLs at query time (not just at indexing)."},
+  {id:"HRD-M07", t:"Output schema validation, PII detection and harm classification before display."},
+  {id:"HRD-M12", t:"Per-tenant rate limits, cost caps and abuse detection on every LLM endpoint."},
+];
+
+const STATES = [
+  {k:"imp", l:"Implemented", v:1},
+  {k:"par", l:"Partial", v:0.5},
+  {k:"no",  l:"Not Implemented", v:0},
+  {k:"na",  l:"N/A", v:null},
+];
+const answers = {};
+const formEl = document.getElementById("assessment-form");
+formEl.innerHTML = ASSESS.map((q,i)=>`
+  <div class="assess-question">
+    <div class="qbody">
+      <strong>${q.id}</strong> — ${q.t}
+      <small>Tap one option below.</small>
+    </div>
+    <div class="assess-options" data-qi="${i}">
+      ${STATES.map(s=>`
+        <label data-state="${s.k}">
+          <input type="radio" name="q${i}" value="${s.k}" />
+          <span>${s.l}</span>
+        </label>`).join("")}
+    </div>
+  </div>
+`).join("");
+
+function recompute(){
+  let total = 0, scored = 0;
+  ASSESS.forEach((q,i)=>{
+    const a = answers[i];
+    if(a==null) return;
+    const v = STATES.find(s=>s.k===a).v;
+    if(v===null) return;
+    total += v;
+    scored += 1;
+  });
+  const bar = document.getElementById("score-bar");
+  if(scored===0){
+    document.getElementById("score-pct").textContent = "—";
+    bar.style.width = "0%";
+    document.getElementById("score-rating").textContent = "Not yet scored";
+    document.getElementById("score-text").textContent = "Tick the controls below to compute your maturity. Implemented counts full; Partial counts half. Not Applicable is excluded from the score.";
+    return;
+  }
+  const pct = (total/scored)*100;
+  document.getElementById("score-pct").textContent = pct.toFixed(0)+"%";
+  bar.style.width = pct+"%";
+  let rating="Foundational", text="Below 40%. The core agentic and connector controls are absent — your highest priority is to disable defaults that allow external action.";
+  let barColor = "var(--red)";
+  if(pct>=80){ rating="Mature"; text="80%+. Strong baseline. Focus on detection coverage, exception governance, and continuous evidence."; barColor = "var(--emerald)"; }
+  else if(pct>=60){ rating="Developing"; text="60–79%. Most critical controls in place. Close the partial gaps and add automated evidence collection."; barColor = "var(--blue)"; }
+  else if(pct>=40){ rating="Emerging"; text="40–59%. The skeleton is there. Prioritise tenant-wide deny-by-default, MCP allow-list, and SIEM forwarding."; barColor = "var(--amber)"; }
+  bar.style.background = barColor;
+  document.getElementById("score-rating").textContent = rating;
+  document.getElementById("score-text").textContent = text;
+}
+
+formEl.addEventListener("change", e=>{
+  if(e.target.matches('input[type="radio"]')){
+    const grp = e.target.closest(".assess-options");
+    const qi = parseInt(grp.dataset.qi,10);
+    answers[qi] = e.target.value;
+    grp.querySelectorAll("label").forEach(l=>{
+      l.classList.remove("sel-imp","sel-par","sel-no","sel-na");
+    });
+    const lbl = e.target.parentElement;
+    lbl.classList.add("sel-"+e.target.value);
+    recompute();
+  }
+});
+
+document.getElementById("reset-assess").addEventListener("click", ()=>{
+  Object.keys(answers).forEach(k=>delete answers[k]);
+  formEl.querySelectorAll('input[type="radio"]').forEach(r=>r.checked=false);
+  formEl.querySelectorAll("label").forEach(l=>l.classList.remove("sel-imp","sel-par","sel-no","sel-na"));
+  recompute();
+});
+
+document.getElementById("export-csv").addEventListener("click", ()=>{
+  const rows = [["Control ID","Control","Status"]];
+  ASSESS.forEach((q,i)=>{
+    const a = answers[i];
+    const status = a ? STATES.find(s=>s.k===a).l : "(not answered)";
+    rows.push([q.id, q.t, status]);
+  });
+  const csv = rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(",")).join("\r\n");
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "ai-maturity-assessment.csv";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+/* ===== Step-by-step guide tabs ===== */
+document.querySelectorAll(".guide-tabs").forEach(group => {
+  const tabs = group.querySelectorAll(".guide-tab");
+  const guideEl = group.closest(".guide");
+  tabs.forEach(tab => {
+    tab.addEventListener("click", () => {
+      tabs.forEach(t => t.classList.remove("active"));
+      tab.classList.add("active");
+      const target = tab.dataset.target;
+      guideEl.querySelectorAll(".guide-panel").forEach(p => {
+        p.classList.toggle("active", p.id === target);
+      });
+    });
+  });
+});
+
+/* ===== Customisation wizard ===== */
+// Office docs: rewritten via JSZip (XML inside the .docx / .xlsx package).
+// Text files: fetched as text, token-substituted, packaged with their folder structure preserved.
+const WIZ_FILES = [
+  // Office documents (Tier 1) ---------------------------------------------
+  { name: "AI-Usage-Governance-Standard-v1.0.docx", kind: "docx" },
+  { name: "AI-Acceptable-Use-Policy-and-Incident-Playbook-v1.0.docx", kind: "docx" },
+  { name: "AI-Tool-Risk-Assessment-v1.0.xlsx", kind: "xlsx" },
+  { name: "AI-Hardening-Controls-v1.0.xlsx", kind: "xlsx" },
+  { name: "AI-Built-App-Promotion-Runbook-v1.0.docx", kind: "docx" },
+  { name: "AI-Code-Review-Checklist-v1.0.docx", kind: "docx" },
+  { name: "Intune-Endpoint-Deployment-Guide-v1.0.docx", kind: "docx" },
+  { name: "LLM-Application-Development-Guardrails-v1.0.docx", kind: "docx" },
+
+  // Endpoint policy-as-code (Tier 2) --------------------------------------
+  { name: "endpoint-policy/policy.yaml",                  kind: "text" },
+  { name: "endpoint-policy/policy.schema.json",           kind: "text" },
+  { name: "endpoint-policy/emit.py",                      kind: "text" },
+  { name: "endpoint-policy/README.md",                    kind: "text" },
+
+  // Pre-flight verification scripts ---------------------------------------
+  { name: "scripts/aigov-preflight.sh",                   kind: "text" },
+  { name: "scripts/aigov-preflight.ps1",                  kind: "text" },
+
+  // Sandbox reference architecture ----------------------------------------
+  { name: "sandbox/wrangler.toml",                        kind: "text" },
+  { name: "sandbox/docker-compose.yml",                   kind: "text" },
+  { name: "sandbox/Dockerfile.template",                  kind: "text" },
+  { name: "sandbox/README.md",                            kind: "text" },
+  { name: "sandbox/k8s/deployment.yaml",                  kind: "text" },
+  { name: "sandbox/k8s/networkpolicy.yaml",               kind: "text" },
+  { name: "sandbox/k8s/kyverno-policies.yaml",            kind: "text" },
+  { name: "sandbox/k8s/README.md",                        kind: "text" },
+
+  // CI / pre-commit gates --------------------------------------------------
+  { name: "ci/.pre-commit-config.yaml",                   kind: "text" },
+  { name: "ci/ai-app-gates.yml",                          kind: "text" },
+  { name: "ci/optional-gates.yml",                        kind: "text" },
+  { name: "ci/semgrep-ai-rules.yml",                      kind: "text" },
+  { name: "ci/TOOL_CATALOG.md",                           kind: "text" },
+
+  // Per-tool drop-in configs ----------------------------------------------
+  { name: "per-tool/README.md",                           kind: "text" },
+  { name: "per-tool/chatgpt-desktop/README.md",           kind: "text" },
+  { name: "per-tool/codex-cli/README.md",                 kind: "text" },
+  { name: "per-tool/cursor/.cursorrules",                 kind: "text" },
+  { name: "per-tool/cursor/README.md",                    kind: "text" },
+  { name: "per-tool/github-copilot/README.md",            kind: "text" },
+  { name: "per-tool/github-copilot/copilot-instructions.md", kind: "text" },
+];
+
+function xmlEscape(s){
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function slugify(s){
+  return String(s||"organisation").toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 60) || "organisation";
+}
+
+function fmtDate(iso){
+  if(!iso) return "";
+  try{
+    const d = new Date(iso);
+    return d.toLocaleDateString("en-GB", {year:"numeric", month:"long", day:"numeric"});
+  }catch(e){ return iso; }
+}
+
+function gatherWizardValues(){
+  const v = (id)=>document.getElementById(id).value.trim();
+  const map = {};
+  // Required + standard placeholders
+  if(v("w-org"))         map["[Organization Name]"]     = v("w-org");
+  if(v("w-owner"))       map["[Document Owner]"]        = v("w-owner");
+  if(v("w-approver"))    map["[Approver Forum]"]        = v("w-approver");
+  if(v("w-effective"))   map["[Effective Date]"]        = fmtDate(v("w-effective"));
+  if(v("w-region"))      map["[Vendor Risk Register]"]  = v("w-region");
+  if(v("w-itsupport"))   map["[IT Support Contact]"]    = v("w-itsupport");
+  if(v("w-security"))    map["[Security Contact]"]      = v("w-security");
+  // Advanced
+  if(v("w-toolregister"))map["[Approved AI Tool Register]"] = v("w-toolregister");
+  if(v("w-aup"))         map["[Acceptable Use Policy]"]     = v("w-aup");
+  if(v("w-exception"))   map["[Exception Procedure]"]       = v("w-exception");
+  if(v("w-isms"))        map["[ISMS Scope Document]"]       = v("w-isms");
+  if(v("w-oncall"))      map["[On-call number / pager]"]    = v("w-oncall");
+  if(v("w-author"))      map["[Author]"]                    = v("w-author");
+  // Sandbox tokens (used in templates/sandbox/wrangler.toml)
+  if(v("w-tenantslug"))  map["[REPLACE_WITH_TENANT_SLUG]"]  = v("w-tenantslug");
+  if(v("w-owneremail"))  map["[REPLACE_WITH_OWNER_EMAIL]"]  = v("w-owneremail");
+  return map;
+}
+
+async function rewriteOneFile(file, replacements){
+  const resp = await fetch("templates/" + file.name);
+  if(!resp.ok) throw new Error("Could not fetch " + file.name + " (HTTP " + resp.status + ")");
+
+  // ---- Text files (YAML / JSON / TOML / shell / Python / Markdown) -----
+  // These are not OOXML packages, so just substitute on the raw body and
+  // hand back a Blob. Folder structure inside the kit ZIP is preserved by
+  // using `file.name` as the entry path (e.g. "endpoint-policy/policy.yaml").
+  if(file.kind === "text"){
+    let body = await resp.text();
+    for(const [placeholder, value] of Object.entries(replacements)){
+      // Plain-text substitution: value goes in as-is (no XML escaping).
+      body = body.split(placeholder).join(value);
+    }
+    return new Blob([body], { type: "text/plain;charset=utf-8" });
+  }
+
+  // ---- OOXML packages (.docx / .xlsx) ---------------------------------
+  const buf = await resp.arrayBuffer();
+  const zip = await JSZip.loadAsync(buf);
+
+  // Which inner XML files contain the visible text?
+  // .docx: word/document.xml + headers/footers
+  // .xlsx: xl/sharedStrings.xml (string cells) + xl/worksheets/*.xml (inline strings, comments)
+  const targets = [];
+  zip.forEach((path) => {
+    if(file.kind === "docx"){
+      if(/^word\/(document|header\d*|footer\d*|footnotes|endnotes|comments)\.xml$/.test(path)){
+        targets.push(path);
+      }
+    } else {
+      if(/^xl\/(sharedStrings|worksheets\/sheet\d+)\.xml$/.test(path)){
+        targets.push(path);
+      }
+    }
+  });
+
+  for(const path of targets){
+    const f = zip.file(path);
+    if(!f) continue;
+    let xml = await f.async("string");
+    for(const [placeholder, value] of Object.entries(replacements)){
+      const safe = xmlEscape(value);
+      xml = xml.split(placeholder).join(safe);
+    }
+    zip.file(path, xml);
+  }
+
+  return await zip.generateAsync({
+    type: "blob",
+    mimeType: file.kind === "docx"
+      ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    compression: "DEFLATE",
+    compressionOptions: { level: 6 },
+  });
+}
+
+function makeReadme(values){
+  const docs = WIZ_FILES.filter(f => f.kind !== "text");
+  const text = WIZ_FILES.filter(f => f.kind === "text");
+  const lines = [
+    "AI Governance & Hardening Kit — Customised Bundle",
+    "==================================================",
+    "",
+    "This ZIP contains the full AI Governance & Hardening Project — Office",
+    "templates, policy-as-code, scripts, sandbox configs, CI gates, and per-tool",
+    "drop-ins — all pre-filled with the values you supplied via the wizard.",
+    "",
+    "Office documents (top-level):",
+  ];
+  for(const f of docs) lines.push("  - " + f.name);
+  lines.push(
+    "",
+    "Supporting files (folder structure preserved):",
+  );
+  for(const f of text) lines.push("  - " + f.name);
+  lines.push(
+    "",
+    "Values applied:",
+  );
+  for(const [k,v] of Object.entries(values)){
+    lines.push("  " + k + " -> " + v);
+  }
+  if(Object.keys(values).length === 0){
+    lines.push("  (none supplied — all placeholders left as-is)");
+  }
+  lines.push(
+    "",
+    "Tokens NOT auto-replaced (resolve manually before deploy):",
+    (values["[REPLACE_WITH_TENANT_SLUG]"]
+       ? "  (tenant slug auto-replaced with: " + values["[REPLACE_WITH_TENANT_SLUG]"] + ")"
+       : "  [REPLACE_WITH_TENANT_SLUG]            sandbox/wrangler.toml"),
+    (values["[REPLACE_WITH_OWNER_EMAIL]"]
+       ? "  (owner email auto-replaced with: " + values["[REPLACE_WITH_OWNER_EMAIL]"] + ")"
+       : "  [REPLACE_WITH_OWNER_EMAIL]            sandbox/wrangler.toml"),
+    "  __REPLACE_WITH_CODESIGN_DESIGNATED_REQUIREMENT__   TCC mobileconfig (after emit)",
+    "",
+    "Heads-up on URL contexts:",
+    "  In endpoint-policy/policy.yaml (and the JSON it emits) [Organization Name] is",
+    "  used inside hostnames such as https://aigov.[Organization Name].com — your",
+    "  literal org name was substituted there. If your name contains spaces or",
+    "  punctuation, edit those URLs to match your real DNS subdomain (or replace",
+    "  with the slug version: " + (values["[Organization Name]"] ? slugify(values["[Organization Name]"]) : "<your-slug>") + ").",
+    "",
+    "Next steps:",
+    "  1. Open each .docx / .xlsx in Word / Excel to confirm content.",
+    "  2. Search the supporting files for any remaining [Bracketed Placeholder].",
+    "  3. Route the Standard and AUP through Legal / Privacy for sign-off.",
+    "  4. Use the Risk Assessment workbook to vet AI tools before adoption.",
+    "  5. Use the Hardening Controls workbook + per-tool sheets to track config.",
+    "  6. Run endpoint-policy/emit.py to compile policy.yaml into vendor configs.",
+    "  7. Wire ci/ai-app-gates.yml + ci/.pre-commit-config.yaml into your repos;",
+    "     read ci/TOOL_CATALOG.md and enable jobs from ci/optional-gates.yml",
+    "     for tools you already license (SonarCloud, GHAS CodeQL, CodeRabbit,",
+    "     Snyk, Checkov, Promptfoo, etc.).",
+    "  8. Drop per-tool/<tool>/ files into the relevant repos (Cursor, Copilot, etc.).",
+    "",
+    "License: MIT — see https://github.com/<your-org>/ai-governance-hardening",
+    "Generated: " + new Date().toISOString(),
+    ""
+  );
+  return lines.join("\r\n");
+}
+
+async function buildKit(){
+  const status = document.getElementById("w-status");
+  const btn = document.getElementById("w-build");
+  const orgEl = document.getElementById("w-org");
+
+  if(!orgEl.value.trim()){
+    orgEl.focus();
+    status.className = "wizard-status err";
+    status.textContent = "Organization name is required.";
+    return;
+  }
+
+  if(typeof JSZip === "undefined"){
+    status.className = "wizard-status err";
+    status.textContent = "JSZip didn't load (offline or CDN blocked). Open this page over HTTP and try again.";
+    return;
+  }
+
+  const values = gatherWizardValues();
+  status.className = "wizard-status busy";
+  status.textContent = "Building kit…";
+  btn.disabled = true;
+
+  try{
+    const out = new JSZip();
+    let i = 0;
+    for(const file of WIZ_FILES){
+      i++;
+      status.textContent = `Customising ${i} of ${WIZ_FILES.length}: ${file.name}`;
+      const blob = await rewriteOneFile(file, values);
+      out.file(file.name, blob);
+    }
+    out.file("README.txt", makeReadme(values));
+
+    status.textContent = "Packaging…";
+    const finalBlob = await out.generateAsync({type:"blob", compression:"DEFLATE", compressionOptions:{level:6}});
+
+    const slug = slugify(values["[Organization Name]"]);
+    const url = URL.createObjectURL(finalBlob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `ai-governance-kit-${slug}.zip`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    status.className = "wizard-status ok";
+    status.textContent = `Downloaded ai-governance-kit-${slug}.zip — ${WIZ_FILES.length} files customised.`;
+  } catch(err){
+    console.error(err);
+    status.className = "wizard-status err";
+    status.textContent = "Build failed: " + (err && err.message ? err.message : "unknown error") +
+      ". If you opened this file directly (file://), serve it via http instead.";
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+document.getElementById("w-build").addEventListener("click", buildKit);
+document.getElementById("w-reset").addEventListener("click", ()=>{
+  document.getElementById("wizard-form").reset();
+  const s = document.getElementById("w-status");
+  s.className = "wizard-status";
+  s.textContent = "Fields left blank stay as placeholders so you can fill them in later.";
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,122 @@
+# =============================================================================
+# Sandbox tenant — Cloudflare Pages + Workers reference deployment
+# =============================================================================
+# Drop-in template for the sandbox stage of the AI-Built App Promotion Runbook.
+# Before running: edit name, account_id, and the [vars] block.
+#
+# Wrangler does NOT interpolate ${VAR} inside table-array blocks
+# ([[d1_databases]], [[r2_buckets]] ...). The tokens below are placeholders
+# you templatize at deploy time (envsubst, or a sed step in your CI), not
+# wrangler-time variable references.
+#
+# Deploy:
+#   npm i -g wrangler
+#   wrangler login
+#   envsubst < wrangler.toml > wrangler.deploy.toml   # if you templatize
+#   wrangler deploy --config wrangler.deploy.toml
+#
+# Tear-down on a 14-day timer is implemented by the [triggers] cron at the
+# bottom — your Worker checks the SANDBOX_CREATED_AT timestamp and deletes the
+# tenant's R2 bucket + D1 database when the window elapses.
+# =============================================================================
+
+name = "ai-sandbox-tenant"
+main = "src/sandbox-worker.ts"
+compatibility_date = "2026-04-01"
+account_id = "REPLACE_WITH_CLOUDFLARE_ACCOUNT_ID"
+workers_dev = false
+
+# Pin the Worker to a custom subdomain. Multiple sandbox tenants share the
+# wildcard zone; the Worker reads the host header to scope per-tenant data.
+routes = [
+  { pattern = "sandbox-*.aigov.example.com/*", zone_name = "aigov.example.com" }
+]
+
+# ---------------------------------------------------------------------------
+# Variables
+# ---------------------------------------------------------------------------
+[vars]
+SANDBOX_TENANT_ID      = "REPLACE_WITH_TENANT_SLUG"
+SANDBOX_OWNER_EMAIL    = "REPLACE_WITH_OWNER_EMAIL"
+SANDBOX_CREATED_AT     = "REPLACE_WITH_YYYY-MM-DD"
+SANDBOX_EXPIRES_AT     = "REPLACE_WITH_YYYY-MM-DD_PLUS_14"
+ALLOWED_REVIEWER_GROUP = "security-reviewers"
+SIEM_WEBHOOK           = "https://siem.example.com/ingest/aigov-sandbox"
+LOG_LEVEL              = "info"
+
+# ---------------------------------------------------------------------------
+# Outbound egress restriction
+# ---------------------------------------------------------------------------
+# Cloudflare's documented mechanism for restricting Worker outbound traffic is
+# Outbound Workers (formerly "egress workers"). Configure in the Cloudflare
+# Dashboard: Workers & Pages → your Worker → Settings → Outbound Workers, or
+# via the [outbound] block (where currently supported by your account).
+# Outbound Workers requires Workers Paid plan.
+#
+# [outbound]
+# service = "egress-allow-list-worker"
+
+# ---------------------------------------------------------------------------
+# Storage — sandbox-only, no prod data ever
+# ---------------------------------------------------------------------------
+# Replace the placeholder identifiers with values produced by:
+#   wrangler d1 create ai-sandbox-<tenant-slug>
+#   wrangler kv namespace create SANDBOX_KV
+[[d1_databases]]
+binding = "SANDBOX_DB"
+database_name = "ai-sandbox-tenant"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+
+[[r2_buckets]]
+binding = "SANDBOX_BUCKET"
+bucket_name = "ai-sandbox-tenant"
+
+[[kv_namespaces]]
+binding = "SANDBOX_KV"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+# ---------------------------------------------------------------------------
+# Auth — Cloudflare Access in front of every route
+# ---------------------------------------------------------------------------
+# Configure Access manually in the Zero Trust dashboard:
+#   1. Applications → Add an application → Self-hosted
+#   2. Application domain: sandbox-*.aigov.example.com
+#   3. Policies: require security-reviewers SSO group + compliant device + MFA
+#   4. Service Auth: disabled (no API tokens — humans only)
+#   5. Identity provider: corporate IdP (Entra / Okta / Google)
+#
+# The Worker reads the CF-Access-Jwt-Assertion header on every request and
+# re-verifies the signature against the team's certs endpoint (defence in depth).
+
+# ---------------------------------------------------------------------------
+# Observability — every request logged, forwarded to SIEM
+# ---------------------------------------------------------------------------
+[observability]
+enabled = true
+head_sampling_rate = 1.0   # 100% sampling in the sandbox; cost is negligible
+
+# ---------------------------------------------------------------------------
+# Auto-expiry
+# ---------------------------------------------------------------------------
+[triggers]
+crons = [
+  "0 3 * * *"   # daily at 03:00 UTC — Worker checks SANDBOX_EXPIRES_AT and self-destructs
+]
+
+# ---------------------------------------------------------------------------
+# Limits
+# ---------------------------------------------------------------------------
+# cpu_ms is capped at 30000 (30 s) on Workers Standard plan; Free / Bundled
+# plans have lower caps. Verify your account plan before deploying — wrangler
+# rejects values above the plan's ceiling at deploy time.
+[limits]
+cpu_ms = 30000
+
+# ---------------------------------------------------------------------------
+# Environments
+# ---------------------------------------------------------------------------
+# Use [env.staging] for staged sandbox iteration before reviewer hand-off.
+[env.staging]
+name = "ai-sandbox-tenant-staging"
+[env.staging.vars]
+LOG_LEVEL = "debug"

@@ -1,0 +1,188 @@
+# =============================================================================
+# Optional CI gates — SonarCloud, GHAS CodeQL, CodeRabbit, Snyk, Checkov,
+# Promptfoo
+# =============================================================================
+# This workflow demonstrates how to wire enterprise / commercial scanners
+# alongside the default `ai-app-gates.yml`. None of these jobs are required
+# by the kit; enable the ones your organisation already licenses or wants
+# to standardise on. See TOOL_CATALOG.md for the full landscape and the
+# rationale per category.
+#
+# All third-party actions are pinned to a major-version tag for clarity —
+# at adoption time, repin to a digest if your supply-chain policy
+# requires it.
+# =============================================================================
+name: Optional Gates
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  security-events: write   # required for SARIF upload (CodeQL, Snyk, Checkov)
+  pull-requests: write     # required for CodeRabbit / Reviewdog comments
+  actions: read
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # SAST — GitHub CodeQL via GHAS
+  # ---------------------------------------------------------------------------
+  # Free for public repos. For private repos requires GitHub Advanced
+  # Security. Deep dataflow analysis; complements Semgrep's fast pattern
+  # rules well.
+  # ---------------------------------------------------------------------------
+  codeql:
+    name: SAST — GitHub CodeQL (GHAS)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        language: [python, javascript]   # extend as needed
+    steps:
+      - uses: actions/checkout@v4
+      - name: Initialise CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-extended,security-and-quality
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+      - name: Analyse
+        uses: github/codeql-action/analyze@v3
+
+  # ---------------------------------------------------------------------------
+  # SAST — SonarCloud
+  # ---------------------------------------------------------------------------
+  # Quality gate-as-policy. Set the gate to fail on any new Bug, Vulnerability
+  # or Security Hotspot in changed code. Configure thresholds in sonar-project.properties.
+  # Requires SONAR_TOKEN secret.
+  # ---------------------------------------------------------------------------
+  sonarcloud:
+    name: SAST — SonarCloud
+    runs-on: ubuntu-latest
+    if: ${{ secrets.SONAR_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # SonarCloud needs full history for blame + new-code period
+      - uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # Project key + organisation are read from sonar-project.properties.
+
+  # ---------------------------------------------------------------------------
+  # SAST + SCA — Snyk
+  # ---------------------------------------------------------------------------
+  # Snyk Code (SAST) + Snyk Open Source (SCA) + Snyk Container in one CLI.
+  # Requires SNYK_TOKEN secret. Block on High/Critical.
+  # ---------------------------------------------------------------------------
+  snyk:
+    name: Snyk — Code + Open Source
+    runs-on: ubuntu-latest
+    if: ${{ secrets.SNYK_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: snyk/actions/setup@master
+      - name: Snyk Code (SAST)
+        run: snyk code test --severity-threshold=high --sarif-file-output=snyk-code.sarif
+        env: { SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }} }
+        continue-on-error: true
+      - name: Snyk Open Source (SCA)
+        run: snyk test --severity-threshold=high --sarif-file-output=snyk-oss.sarif
+        env: { SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }} }
+        continue-on-error: true
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with: { sarif_file: . }
+
+  # ---------------------------------------------------------------------------
+  # AI-aware PR review — CodeRabbit
+  # ---------------------------------------------------------------------------
+  # Reviews every PR diff and posts comments with security and logic
+  # observations. Treat suggestions as advisory — peer-review gate in
+  # Stage 2 still requires a human approver. Configure rules in
+  # .coderabbit.yaml (path filters, required checks, language overrides).
+  # ---------------------------------------------------------------------------
+  # CodeRabbit runs as a GitHub App rather than a workflow job; install
+  # the App on your org / repo at https://coderabbit.ai/ and add a
+  # `.coderabbit.yaml` config file at repo root.
+  #
+  # Reference config snippet (commit as .coderabbit.yaml):
+  #   reviews:
+  #     auto_review: { enabled: true, drafts: false }
+  #     path_filters:
+  #       - "!**/*.lock"
+  #       - "!templates/endpoint-policy/out/**"
+  #     tools:
+  #       semgrep: { enabled: true }
+  #       gitleaks: { enabled: true }
+  #     poem: false
+  # ---------------------------------------------------------------------------
+
+  # ---------------------------------------------------------------------------
+  # IaC scanning — Checkov
+  # ---------------------------------------------------------------------------
+  # If your AI-built app deploys via Terraform / Bicep / CloudFormation /
+  # Kubernetes manifests, this is mandatory. Block on HIGH severity.
+  # ---------------------------------------------------------------------------
+  checkov:
+    name: IaC — Checkov
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bridgecrewio/checkov-action@v12
+        with:
+          framework: terraform,kubernetes,cloudformation,helm,dockerfile,github_actions
+          quiet: true
+          soft_fail: false
+          output_format: sarif
+          output_file_path: checkov.sarif
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with: { sarif_file: checkov.sarif }
+        if: always()
+
+  # ---------------------------------------------------------------------------
+  # GHAS — Dependency Review (PRs only)
+  # ---------------------------------------------------------------------------
+  # Blocks PRs that introduce vulnerable or licence-incompatible dependencies.
+  # Free for public repos; requires GHAS for private repos.
+  # ---------------------------------------------------------------------------
+  dependency-review:
+    name: GHAS — Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          deny-licenses: AGPL-3.0,GPL-3.0   # adapt to your licence policy
+
+  # ---------------------------------------------------------------------------
+  # AI eval harness — Promptfoo
+  # ---------------------------------------------------------------------------
+  # Runs a prompt-injection battery, hallucination checks, regression suite,
+  # and groundedness scoring against the LLM features in your repo.
+  # Configure tests in promptfooconfig.yaml.
+  # ---------------------------------------------------------------------------
+  promptfoo:
+    name: AI eval — Promptfoo
+    runs-on: ubuntu-latest
+    if: hashFiles('promptfooconfig.yaml') != ''
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npx promptfoo@latest eval --output promptfoo-results.json
+        env:
+          OPENAI_API_KEY:    ${{ secrets.OPENAI_API_KEY    }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: promptfoo-results
+          path: promptfoo-results.json

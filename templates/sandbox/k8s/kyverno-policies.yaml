@@ -1,0 +1,191 @@
+# =============================================================================
+# Kyverno cluster policies — admission control for AI-built apps
+# =============================================================================
+# Five policies, all in `enforce` mode by default. Stage-roll them as
+# `audit` first if you have legacy workloads that won't pass on day one.
+#
+# Install Kyverno before applying these:
+#   helm repo add kyverno https://kyverno.github.io/kyverno/
+#   helm install kyverno kyverno/kyverno -n kyverno --create-namespace
+#
+# Equivalent OPA Gatekeeper constraints exist if your platform uses
+# Gatekeeper instead — pick one, not both. Kyverno is more YAML-native
+# and easier to author; Gatekeeper has deeper Rego ecosystem.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1. Verify image signatures via Sigstore cosign before admission.
+#    Pairs with the cosign signing step in templates/ci/ai-app-gates.yml.
+# -----------------------------------------------------------------------------
+apiVersion: kyverno.io/v2beta1
+kind: ClusterPolicy
+metadata:
+  name: verify-image-signatures
+  annotations:
+    policies.kyverno.io/title: "Verify image signatures (Sigstore cosign keyless)"
+    policies.kyverno.io/description: >-
+      Block any image whose Sigstore attestation does not match the expected
+      OIDC issuer + identity (the GitHub Actions workflow that built it).
+spec:
+  validationFailureAction: Enforce
+  webhookTimeoutSeconds: 30
+  rules:
+    - name: verify-cosign
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaces: ["<your-namespace>"]
+      verifyImages:
+        - imageReferences:
+            - "ghcr.io/<your-org>/*"
+          attestors:
+            - count: 1
+              entries:
+                - keyless:
+                    issuer: "https://token.actions.githubusercontent.com"
+                    subject: "https://github.com/<your-org>/*/.github/workflows/ai-app-gates.yml@*"
+                    rekor:
+                      url: "https://rekor.sigstore.dev"
+          mutateDigest: true                # rewrite tag → digest at admission
+          required: true
+          verifyDigest: true
+
+---
+# -----------------------------------------------------------------------------
+# 2. Forbid privileged pods, hostNetwork / hostPID / hostIPC, and the
+#    default ServiceAccount. These are the "low-hanging fruit" attackers
+#    chain to break out of a pod.
+# -----------------------------------------------------------------------------
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: deny-privileged-and-host-namespaces
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: no-privileged
+      match:
+        any:
+          - resources: { kinds: [Pod] }
+      validate:
+        message: "Privileged containers are forbidden."
+        pattern:
+          spec:
+            =(initContainers):
+              - =(securityContext):
+                  =(privileged): "false"
+            containers:
+              - =(securityContext):
+                  =(privileged): "false"
+    - name: no-host-namespaces
+      match:
+        any:
+          - resources: { kinds: [Pod] }
+      validate:
+        message: "hostNetwork / hostPID / hostIPC are forbidden."
+        pattern:
+          spec:
+            =(hostNetwork): "false"
+            =(hostPID): "false"
+            =(hostIPC): "false"
+    - name: no-default-serviceaccount
+      match:
+        any:
+          - resources: { kinds: [Pod] }
+      validate:
+        message: "Pods must use a dedicated ServiceAccount, not 'default'."
+        pattern:
+          spec:
+            serviceAccountName: "?*"   # any non-empty value
+            =(serviceAccountName): "!default"
+
+---
+# -----------------------------------------------------------------------------
+# 3. Require resource requests + limits + readOnlyRootFilesystem +
+#    runAsNonRoot. Forces the restricted PSS profile at admission time,
+#    in addition to the namespace-level PSS label.
+# -----------------------------------------------------------------------------
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-pod-hardening
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: require-resource-limits
+      match:
+        any:
+          - resources: { kinds: [Pod] }
+      validate:
+        message: "All containers must declare CPU + memory requests AND limits."
+        pattern:
+          spec:
+            containers:
+              - resources:
+                  requests: { memory: "?*", cpu: "?*" }
+                  limits:   { memory: "?*", cpu: "?*" }
+    - name: require-non-root-readonly
+      match:
+        any:
+          - resources: { kinds: [Pod] }
+      validate:
+        message: "Containers must runAsNonRoot, drop ALL capabilities, set readOnlyRootFilesystem, and forbid privilege escalation."
+        pattern:
+          spec:
+            containers:
+              - securityContext:
+                  runAsNonRoot: true
+                  allowPrivilegeEscalation: false
+                  readOnlyRootFilesystem: true
+                  capabilities:
+                    drop: ["ALL"]
+
+---
+# -----------------------------------------------------------------------------
+# 4. Forbid latest tags and require image digests in production namespaces.
+#    A signed image at a moving tag is still untrustworthy in motion.
+# -----------------------------------------------------------------------------
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-image-digest
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: digest-required
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaces: ["<your-namespace>"]
+      validate:
+        message: "Production images must be referenced by digest, not tag."
+        pattern:
+          spec:
+            containers:
+              - image: "*@sha256:*"
+
+---
+# -----------------------------------------------------------------------------
+# 5. Disable token automount on the default ServiceAccount in every namespace
+#    that gets one. (Kyverno mutates rather than denies — runs once at SA create.)
+# -----------------------------------------------------------------------------
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: harden-default-serviceaccounts
+spec:
+  rules:
+    - name: turn-off-automount-on-default-sa
+      match:
+        any:
+          - resources:
+              kinds: [ServiceAccount]
+              names: ["default"]
+      mutate:
+        patchStrategicMerge:
+          automountServiceAccountToken: false

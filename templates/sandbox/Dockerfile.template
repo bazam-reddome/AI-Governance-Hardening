@@ -1,0 +1,79 @@
+# =============================================================================
+# Hardened Dockerfile template for an AI-built application
+# =============================================================================
+# Adapt to your stack. Defaults shown for a Python service. The principles
+# carry across runtimes — multi-stage, distroless final image, non-root user,
+# no secrets baked in, HEALTHCHECK, pinned digests for reproducibility.
+#
+# References:
+#   - NSA/CISA Kubernetes Hardening Guide (image security section)
+#   - Snyk: 10 best practices to containerize Node.js / Python applications
+#   - Google distroless: github.com/GoogleContainerTools/distroless
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Stage 1: Builder — installs dependencies and compiles native modules.
+# Discarded after build — its layers do not ship to production.
+# -----------------------------------------------------------------------------
+FROM python:3.12-slim@sha256:REPLACE_WITH_PINNED_DIGEST AS builder
+
+# OCI image labels (visible in registry, used by SBOM tools)
+LABEL org.opencontainers.image.source="https://github.com/<your-org>/<your-repo>"
+LABEL org.opencontainers.image.licenses="MIT"
+LABEL org.opencontainers.image.title="<your-app>"
+LABEL org.opencontainers.image.description="AI-built application — hardened image"
+
+WORKDIR /build
+
+# Install build deps separately so the layer caches well
+COPY requirements.txt ./
+RUN pip install --no-cache-dir --user --require-hashes -r requirements.txt
+
+# Copy source last (most-frequently-changed layer)
+COPY src/ ./src/
+
+# -----------------------------------------------------------------------------
+# Stage 2: Runtime — distroless base, non-root user, read-only friendly.
+# -----------------------------------------------------------------------------
+FROM gcr.io/distroless/python3-debian12:nonroot@sha256:REPLACE_WITH_PINNED_DIGEST AS runtime
+
+# Re-apply labels on the final image (only the last stage's labels are
+# visible in the registry)
+LABEL org.opencontainers.image.source="https://github.com/<your-org>/<your-repo>"
+LABEL org.opencontainers.image.licenses="MIT"
+LABEL org.opencontainers.image.title="<your-app>"
+
+# distroless:nonroot already provides UID 65532 named "nonroot" with no shell
+USER 65532:65532
+WORKDIR /app
+
+# Pull only the artefacts we need from the builder
+COPY --from=builder --chown=65532:65532 /root/.local /home/nonroot/.local
+COPY --from=builder --chown=65532:65532 /build/src     /app/src
+
+# Make the user-installed pip binaries available
+ENV PATH="/home/nonroot/.local/bin:${PATH}"
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+# Default to read-only friendly behaviour
+ENV TMPDIR=/tmp
+
+EXPOSE 8080
+
+# HEALTHCHECK — distroless has no shell, so use the language runtime directly.
+# Container orchestrators (Docker, Kubernetes via livenessProbe) honour this.
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=2)"]
+
+ENTRYPOINT ["python", "-m", "src.main"]
+
+# =============================================================================
+# Build & sign (CI):
+#   docker build -t ghcr.io/<org>/<app>:${SHA} .
+#   cosign sign --yes ghcr.io/<org>/<app>:${SHA}
+#   syft ghcr.io/<org>/<app>:${SHA} -o cyclonedx-json > sbom.cdx.json
+#   cosign attest --predicate sbom.cdx.json --type cyclonedx ghcr.io/<org>/<app>:${SHA}
+#
+# Verify on the cluster (Kyverno verifyImages policy):
+#   See templates/sandbox/k8s/kyverno-verify-images.yaml
+# =============================================================================

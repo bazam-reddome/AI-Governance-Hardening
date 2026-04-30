@@ -1,0 +1,90 @@
+# =============================================================================
+# Default-deny + targeted egress allow-list NetworkPolicies
+# =============================================================================
+# Two policies in this file:
+#   1. default-deny — drops ALL ingress and egress for the namespace
+#   2. allow-egress-to-model-api — re-opens just what the AI app needs
+#
+# Requires a CNI that enforces NetworkPolicy: Cilium, Calico, or any
+# upstream-conformant implementation. EKS / GKE / AKS managed CNI usually
+# qualify — verify before relying on this for production segmentation.
+#
+# Aligned to NSA/CISA Kubernetes Hardening Guide § Network separation and
+# hardening.
+# =============================================================================
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: <your-namespace>
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+  # Empty ingress / egress lists = deny all.
+
+---
+# DNS resolution — required for any other egress to work.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-egress-dns
+  namespace: <your-namespace>
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels: { kubernetes.io/metadata.name: kube-system }
+          podSelector:
+            matchLabels: { k8s-app: kube-dns }
+      ports:
+        - { protocol: UDP, port: 53 }
+        - { protocol: TCP, port: 53 }
+
+---
+# Allow ingress from the namespace's ingress controller / service mesh only.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-from-gateway
+  namespace: <your-namespace>
+spec:
+  podSelector:
+    matchLabels: { app.kubernetes.io/name: <your-app> }
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels: { kubernetes.io/metadata.name: ingress-nginx }   # adapt
+      ports:
+        - { protocol: TCP, port: 8080 }
+
+---
+# Egress to the model API only. Replace fqdn / IPs with your provider's
+# documented egress list. NetworkPolicy CIDR-based egress works on every
+# CNI; FQDN-based egress requires Cilium with the FQDN policy feature
+# enabled (preferred where available).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-egress-model-api
+  namespace: <your-namespace>
+spec:
+  podSelector:
+    matchLabels: { app.kubernetes.io/name: <your-app> }
+  policyTypes: [Egress]
+  egress:
+    # Provider model APIs (resolve current ranges in your provider's docs;
+    # these are placeholders and WILL drift):
+    - to:
+        - ipBlock: { cidr: 0.0.0.0/0, except: ["169.254.0.0/16","10.0.0.0/8","172.16.0.0/12","192.168.0.0/16"] }
+      ports:
+        - { protocol: TCP, port: 443 }
+    # If you run an in-cluster vector DB (e.g. Qdrant / Milvus):
+    # - to:
+    #     - namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: vector-db } }
+    #       podSelector:       { matchLabels: { app.kubernetes.io/name: qdrant } }
+    #   ports:
+    #     - { protocol: TCP, port: 6333 }

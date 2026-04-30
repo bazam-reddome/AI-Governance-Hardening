@@ -1,0 +1,133 @@
+# =============================================================================
+# Hardened Deployment + ServiceAccount for an AI-built application
+# =============================================================================
+# Aligned to:
+#   - Kubernetes Pod Security Standards (PSS) — restricted profile
+#   - NSA/CISA Kubernetes Hardening Guide v1.2 (Aug 2022)
+#   - CIS Kubernetes Benchmark — Pod and PodSpec sections
+#
+# Replace placeholders:
+#   <your-app>, <your-namespace>, <your-org>, <DIGEST>
+#
+# Pair with networkpolicy.yaml (default-deny) and the Kyverno cluster
+# policies under k8s/kyverno-policies/.
+# =============================================================================
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: <your-namespace>
+  labels:
+    # Enforce Pod Security restricted profile at the namespace level.
+    # Anything that fails PSS-restricted is rejected by the API server,
+    # giving you defence-in-depth alongside the Kyverno policies.
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: <your-app>
+  namespace: <your-namespace>
+# Disable token automount — your app should NOT call the kube API.
+# If it must (rare for AI apps), create a dedicated SA with a tightly-scoped Role.
+automountServiceAccountToken: false
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: <your-app>
+  namespace: <your-namespace>
+  labels:
+    app.kubernetes.io/name: <your-app>
+    app.kubernetes.io/managed-by: argocd        # adapt to your GitOps tool
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: { maxUnavailable: 0, maxSurge: 1 }
+  selector:
+    matchLabels: { app.kubernetes.io/name: <your-app> }
+  template:
+    metadata:
+      labels: { app.kubernetes.io/name: <your-app> }
+      annotations:
+        # Make the workload readable to runtime detection tooling
+        "container.apparmor.security.beta.kubernetes.io/app": "runtime/default"
+    spec:
+      serviceAccountName: <your-app>
+      automountServiceAccountToken: false
+      # Pod-level security context — restricted PSS baseline
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile: { type: RuntimeDefault }
+      # Spread across nodes / zones — survive a node loss
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels: { app.kubernetes.io/name: <your-app> }
+      containers:
+        - name: app
+          # Pin to a digest, not a tag. Kyverno verifyImages policy
+          # will reject tags-only references in production.
+          image: ghcr.io/<your-org>/<your-app>@sha256:<DIGEST>
+          imagePullPolicy: IfNotPresent
+          ports:
+            - { name: http, containerPort: 8080, protocol: TCP }
+          # Container-level security context — restrict further
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 65532
+            runAsGroup: 65532
+            capabilities: { drop: ["ALL"] }
+            seccompProfile: { type: RuntimeDefault }
+          resources:
+            requests: { cpu: "100m", memory: "256Mi", ephemeral-storage: "100Mi" }
+            limits:   { cpu: "500m", memory: "512Mi", ephemeral-storage: "500Mi" }
+          # readOnlyRootFilesystem requires explicit writable scratch
+          volumeMounts:
+            - { name: tmp,         mountPath: /tmp }
+            - { name: cache,       mountPath: /home/nonroot/.cache }
+          env:
+            # Inject secrets via External Secrets Operator / Vault Agent — never
+            # bake into the image, never use `valueFrom: secretKeyRef:` of a
+            # Secret resource alone.
+            - name: MODEL_API_KEY
+              valueFrom: { secretKeyRef: { name: <your-app>-secrets, key: MODEL_API_KEY } }
+          livenessProbe:
+            httpGet:  { path: /healthz, port: http }
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:  { path: /readyz, port: http }
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          startupProbe:
+            httpGet:  { path: /healthz, port: http }
+            failureThreshold: 30
+            periodSeconds: 5
+      volumes:
+        - { name: tmp,   emptyDir: { medium: Memory, sizeLimit: 64Mi } }
+        - { name: cache, emptyDir: { medium: Memory, sizeLimit: 64Mi } }
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: <your-app>
+  namespace: <your-namespace>
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels: { app.kubernetes.io/name: <your-app> }

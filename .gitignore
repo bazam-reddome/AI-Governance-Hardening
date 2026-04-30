@@ -1,0 +1,19 @@
+# LibreOffice lock files (sometimes left behind on first open)
+.~lock.*
+~$*
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Editor junk
+*.swp
+.vscode/
+.idea/
+
+# Endpoint policy generator output — recreate locally with `python3 emit.py`
+templates/endpoint-policy/out/
+
+# Sandbox local config files (may contain real secrets)
+templates/sandbox/.env
+templates/sandbox/wrangler.deploy.toml

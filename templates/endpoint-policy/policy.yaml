@@ -1,0 +1,250 @@
+# =============================================================================
+# AI Endpoint Hardening Profile
+# =============================================================================
+# Policy-as-code source of truth for AI coding-tool containment on developer
+# endpoints. Sibling generator scripts emit vendor-native enforcement files
+# (managed-settings.json for Claude, AppLocker XML for Windows, TCC mobileconfig
+# for macOS, network proxy / firewall rules) from this YAML.
+#
+# Frameworks:
+#   - NIST AI RMF 1.0 (MANAGE-1.3, MANAGE-2.1)
+#   - ISO/IEC 42001:2023 (A.6.2.5, A.6.2.7, A.7.5)
+#   - ISO/IEC 5338:2023 (AI lifecycle — operations)
+#   - OWASP LLM Top 10 (LLM02, LLM03, LLM05, LLM06)
+#   - MITRE ATLAS (Initial Access, Execution, Exfiltration)
+#   - MITRE D3FEND (Executable Allowlisting, Outbound Traffic Filtering,
+#                   File Analysis — verify exact technique IDs against the
+#                   current MITRE D3FEND knowledge graph at d3fend.mitre.org)
+#   - NIST SP 800-218 (SSDF) — PS.1, PS.2, PW.4
+#   - NCSC / CISA Guidelines for Secure AI System Development (Nov 2023)
+#
+# Validation: see policy.schema.json for the JSON Schema this conforms to.
+# Edit, validate, then run the emitters in scripts/ to produce vendor configs.
+# =============================================================================
+
+apiVersion: aigov.io/v1
+kind: AIEndpointPolicy
+metadata:
+  name: corporate-baseline
+  version: "1.0"
+  owner: "[Document Owner]"           # e.g. "CISO"
+  effective_date: "[YYYY-MM-DD]"
+  classification: internal
+  rotation_period_days: 90
+
+spec:
+  # ---------------------------------------------------------------------------
+  # Tools in scope
+  # ---------------------------------------------------------------------------
+  scope:
+    tools:
+      - name: claude-desktop
+        platforms: [macos, windows]
+      - name: claude-code
+        platforms: [macos, windows, linux]
+      - name: codex-cli
+        platforms: [macos, linux]
+      - name: github-copilot-cli
+        platforms: [macos, windows, linux]
+      - name: cursor
+        platforms: [macos, windows]
+      - name: chatgpt-desktop
+        platforms: [macos, windows]
+
+  # ---------------------------------------------------------------------------
+  # Filesystem containment — Dev Drive / sandbox volume
+  # ---------------------------------------------------------------------------
+  filesystem:
+    # Where AI tools may operate. Variables resolved by the emitter:
+    #   ${DEV_DRIVE}  Windows 11 Dev Drive root (e.g. D:\)
+    #   ${SANDBOX_VOL} macOS APFS sandbox volume root (e.g. /Volumes/AIWorkspaces)
+    #   ${USER_HOME}  expansion handled per OS
+    working_root_windows: "${DEV_DRIVE}\\ai-workspaces"
+    working_root_macos:   "${SANDBOX_VOL}/ai-workspaces"
+    working_root_linux:   "${HOME}/ai-workspaces"
+
+    allow_paths:
+      - "${WORKING_ROOT}/**"
+      - "${WORKING_ROOT}/tmp/**"
+
+    deny_paths:
+      # Personal areas
+      - "${USER_HOME}/Documents/**"
+      - "${USER_HOME}/Desktop/**"
+      - "${USER_HOME}/Downloads/**"
+      - "${USER_HOME}/Pictures/**"
+      - "${USER_HOME}/Movies/**"
+      # Credentials / config
+      - "${USER_HOME}/.ssh/**"
+      - "${USER_HOME}/.aws/**"
+      - "${USER_HOME}/.azure/**"
+      - "${USER_HOME}/.gcp/**"
+      - "${USER_HOME}/.kube/**"
+      - "${USER_HOME}/.config/**"
+      - "${USER_HOME}/.gnupg/**"
+      - "${USER_HOME}/.netrc"
+      - "${USER_HOME}/.npmrc"
+      # OS / system
+      - "C:\\Windows\\**"
+      - "C:\\Program Files\\**"
+      - "/etc/**"
+      - "/var/**"
+      - "/usr/**"
+      - "/private/etc/**"
+      - "/Library/Keychains/**"
+
+    backup_required_paths:
+      - "${WORKING_ROOT}/**"          # AI tools may delete; require backup
+
+  # ---------------------------------------------------------------------------
+  # Network egress — proxy / firewall allow-list
+  # ---------------------------------------------------------------------------
+  network_egress:
+    default: deny
+    allow_domains:
+      - api.anthropic.com
+      - api.openai.com
+      - api.github.com
+      - copilot-proxy.githubusercontent.com
+      - models.cdn.openai.com
+      - registry.npmjs.org
+      - pypi.org
+      - files.pythonhosted.org
+      - crates.io
+      - rubygems.org
+      - go.dev
+      - proxy.golang.org
+      - github.com
+      - codeload.github.com
+      - "*.githubusercontent.com"
+    require_proxy_inspection: true
+    block_unencrypted: true            # block plain HTTP
+
+  # ---------------------------------------------------------------------------
+  # Execution — shell commands the AI may invoke
+  # ---------------------------------------------------------------------------
+  execution:
+    bash_allow:
+      - git
+      - npm
+      - pnpm
+      - yarn
+      - python3
+      - pip
+      - node
+      - pytest
+      - go
+      - cargo
+      - make
+      - docker
+      - tox
+      - poetry
+      - rg
+      - jq
+    bash_deny:
+      - curl
+      - wget
+      - scp
+      - rsync
+      - ssh
+      - sudo
+      - su
+      - "chmod 777"
+      - "chmod -R 777"
+      - chown
+      - "kubectl prod-*"
+      - "aws --profile prod"
+      - "az account set --subscription prod-*"
+      - dd
+      - mkfs
+      - shred
+    require_human_confirmation_for:
+      - "rm -rf"
+      - "git push --force"
+      - "git reset --hard"
+      - "docker system prune"
+      - "npm publish"
+      - "pip install --upgrade-strategy"
+    capture_history: true              # mirror to local audit log
+    forward_history_to_siem: true
+
+  # ---------------------------------------------------------------------------
+  # MCP servers, plugins, skills
+  # ---------------------------------------------------------------------------
+  mcp:
+    allow_list_url: "https://aigov.[Organization Name].com/mcp-allowlist.json"
+    block_unsigned: true
+    block_community_marketplace: true
+    pin_versions: true                 # require version-pinned MCPs
+    deny_servers:                      # explicit deny-list, even if signed
+      - shell-execute
+      - aws-admin
+      - azure-admin
+      - gcp-admin
+      - prod-database
+
+  plugins:
+    default: deny
+    require_admin_install: true
+
+  # ---------------------------------------------------------------------------
+  # Scheduled / autonomous tasks
+  # ---------------------------------------------------------------------------
+  scheduled_tasks:
+    enabled: false                     # default-off; exception required
+    exception_required: true
+    if_enabled:
+      max_runtime_minutes: 30
+      deny_actions:
+        - send-email
+        - send-message
+        - external-write
+        - delete-file-outside-working-root
+        - call-prod-api
+
+  # ---------------------------------------------------------------------------
+  # Output gates — what the AI is allowed to produce / commit
+  # ---------------------------------------------------------------------------
+  output_gates:
+    block_secret_patterns_in_diffs: true
+    secret_scan_engine: gitleaks       # alternative: trufflehog
+    require_human_review_above_lines: 50
+    require_signed_commits: true        # gpg / sigstore
+    require_pr_template: true
+    block_external_url_writes_in_scheduled_runs: true
+    flag_ai_authored_commits: true      # add `Co-Authored-By: AI <>` header
+
+  # ---------------------------------------------------------------------------
+  # Logging & monitoring
+  # ---------------------------------------------------------------------------
+  logging:
+    opentelemetry: true
+    otel_collector_endpoint: "https://otel.[Organization Name].com:4318"
+    siem_webhook: "https://siem.[Organization Name].com/ingest/aigov"
+    forward_events:
+      - tool_launch
+      - file_access
+      - network_request
+      - mcp_invocation
+      - shell_execution
+      - policy_violation
+    retention_days: 365
+
+  # ---------------------------------------------------------------------------
+  # Identity binding
+  # ---------------------------------------------------------------------------
+  identity:
+    require_sso: true
+    idp: "[Identity Provider — Entra/Okta/Google]"
+    require_phishing_resistant_mfa: true
+    require_compliant_device: true
+    deny_personal_accounts: true
+
+  # ---------------------------------------------------------------------------
+  # Pre-flight & monitoring cadence
+  # ---------------------------------------------------------------------------
+  preflight:
+    run_on_login: true
+    run_interval_hours: 24
+    fail_action: warn                  # warn | block
+    report_to_siem: true

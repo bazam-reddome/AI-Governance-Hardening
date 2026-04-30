@@ -1,0 +1,107 @@
+# =============================================================================
+# Pre-commit hook pack for AI-generated code
+# =============================================================================
+# Drop into the root of any repo where developers use AI coding tools.
+# Install:
+#   pip install pre-commit
+#   pre-commit install
+#
+# Hooks fail the commit if any check finds an issue. Use `--no-verify` only
+# with a documented exception per the AI Endpoint Hardening Policy.
+#
+# Frameworks: NIST SSDF PS.2 / PW.4, OWASP Top 10 for LLM Applications 2025
+# (LLM02 Sensitive Information Disclosure, LLM03 Supply Chain).
+#
+# CURRENCY NOTE: hook revs are pinned to releases that existed at the time
+# this template was authored. Run `pre-commit autoupdate` periodically to bump
+# to the latest tags; verify each release note before adopting.
+# =============================================================================
+repos:
+  # ---- Secrets ----
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.4   # pin to current at adoption time
+    hooks:
+      - id: gitleaks
+        name: gitleaks (secrets in commits)
+        # Custom config supports org-specific secret formats: see .gitleaks.toml
+        args: ["--config=.gitleaks.toml", "--redact"]
+
+  # NOTE: trufflehog ships its own pre-commit hook spec; we use `repo: local`
+  # here because we want to override the entry to scan the whole tree
+  # (filesystem mode) rather than per-staged-file. pre-commit doesn't honour
+  # `entry:` overrides on hooks pulled from remote repos, so a local hook is
+  # the correct way to express this.
+  - repo: local
+    hooks:
+      - id: trufflehog
+        name: trufflehog (verified secrets)
+        entry: trufflehog filesystem --only-verified --fail .
+        language: system
+        pass_filenames: false
+        # Requires `trufflehog` on PATH. Install via:
+        #   brew install trufflehog   (macOS)
+        #   curl -sSfL https://raw.githubusercontent.com/trufflesecurity/trufflehog/main/scripts/install.sh | sh -s -- -b /usr/local/bin
+
+  # ---- SAST ----
+  # Note: Semgrep, Inc. rebranded the org from `returntocorp` to `semgrep`.
+  # Both repo URLs currently resolve, but `semgrep/semgrep` is canonical.
+  - repo: https://github.com/semgrep/semgrep
+    rev: v1.95.0   # pin to current at adoption time
+    hooks:
+      - id: semgrep
+        name: semgrep — AI-failure-mode rules
+        args:
+          - "--config=p/llm-security"
+          - "--config=p/security-audit"
+          - "--config=p/owasp-top-ten"
+          - "--config=.ci/semgrep-ai-rules.yml"
+          - "--error"
+          - "--quiet"
+          - "--skip-unknown-extensions"
+        types_or: [python, javascript, typescript, go, java, php, ruby, rust]
+
+  # ---- Generic hygiene ----
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0   # pin to current at adoption time
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=1024]
+      - id: detect-aws-credentials
+      - id: detect-private-key
+      - id: check-yaml
+      - id: check-json
+
+  # ---- Commit-message checks ----
+  - repo: local
+    hooks:
+      - id: ai-coauthor-detector
+        name: Detect AI-coauthored commits
+        entry: |
+          bash -c '
+          msg=$(cat "$1" 2>/dev/null || cat .git/COMMIT_EDITMSG 2>/dev/null)
+          if echo "$msg" | grep -qiE "co-authored-by:.*(claude|copilot|chatgpt|cursor|codex|aider)"; then
+            echo "[ai-coauthor-detector] AI co-authorship detected — ensure PR is flagged for senior reviewer."
+          fi
+          exit 0  # informational only
+          '
+        language: system
+        stages: [commit-msg]
+
+      - id: prompt-provenance-warning
+        name: Warn if AI-generated diff lacks prompt comment
+        entry: |
+          bash -c '
+          # Heuristic: if the diff includes large additions (>30 lines) AND the staged
+          # commit message lacks a Prompt: marker, warn (do not block).
+          added=$(git diff --cached --shortstat 2>/dev/null | grep -oE "[0-9]+ insertion" | head -1 | grep -oE "[0-9]+")
+          if [ -n "$added" ] && [ "$added" -gt 30 ]; then
+            if ! git diff --cached --name-only | xargs grep -lE "Prompt:" >/dev/null 2>&1; then
+              echo "[prompt-provenance] Large change ($added+ lines) — consider adding the AI prompt that produced it as a top-of-file comment for review traceability."
+            fi
+          fi
+          exit 0
+          '
+        language: system

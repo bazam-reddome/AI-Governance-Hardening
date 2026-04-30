@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aigov.io/schemas/policy-v1.json",
+  "title": "AI Endpoint Hardening Policy",
+  "description": "JSON Schema for the AI Endpoint Hardening Profile. Validate policy.yaml (after YAML->JSON conversion) against this schema before deploying.",
+  "type": "object",
+  "required": ["apiVersion", "kind", "metadata", "spec"],
+  "properties": {
+    "apiVersion": { "const": "aigov.io/v1" },
+    "kind": { "const": "AIEndpointPolicy" },
+    "metadata": {
+      "type": "object",
+      "required": ["name", "version", "owner"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+(\\.[0-9]+)?$" },
+        "owner": { "type": "string" },
+        "effective_date": { "type": "string" },
+        "classification": { "enum": ["public", "internal", "confidential", "restricted"] },
+        "rotation_period_days": { "type": "integer", "minimum": 1, "maximum": 365 }
+      }
+    },
+    "spec": {
+      "type": "object",
+      "required": ["scope", "filesystem", "network_egress", "execution", "mcp", "logging", "identity"],
+      "properties": {
+        "scope": {
+          "type": "object",
+          "required": ["tools"],
+          "properties": {
+            "tools": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": ["name", "platforms"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "platforms": {
+                    "type": "array",
+                    "items": { "enum": ["macos", "windows", "linux"] }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "filesystem": {
+          "type": "object",
+          "required": ["allow_paths", "deny_paths"],
+          "properties": {
+            "working_root_windows": { "type": "string" },
+            "working_root_macos":   { "type": "string" },
+            "working_root_linux":   { "type": "string" },
+            "allow_paths": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+            "deny_paths":  { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+            "backup_required_paths": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "network_egress": {
+          "type": "object",
+          "required": ["default", "allow_domains"],
+          "properties": {
+            "default": { "enum": ["allow", "deny"] },
+            "allow_domains": { "type": "array", "items": { "type": "string" } },
+            "require_proxy_inspection": { "type": "boolean" },
+            "block_unencrypted": { "type": "boolean" }
+          }
+        },
+        "execution": {
+          "type": "object",
+          "properties": {
+            "bash_allow": { "type": "array", "items": { "type": "string" } },
+            "bash_deny":  { "type": "array", "items": { "type": "string" } },
+            "require_human_confirmation_for": { "type": "array", "items": { "type": "string" } },
+            "capture_history": { "type": "boolean" },
+            "forward_history_to_siem": { "type": "boolean" }
+          }
+        },
+        "mcp": {
+          "type": "object",
+          "properties": {
+            "allow_list_url": { "type": "string", "format": "uri" },
+            "block_unsigned": { "type": "boolean" },
+            "block_community_marketplace": { "type": "boolean" },
+            "pin_versions": { "type": "boolean" },
+            "deny_servers": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "plugins": {
+          "type": "object",
+          "properties": {
+            "default": { "enum": ["allow", "deny"] },
+            "require_admin_install": { "type": "boolean" }
+          }
+        },
+        "scheduled_tasks": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "exception_required": { "type": "boolean" },
+            "if_enabled": {
+              "type": "object",
+              "properties": {
+                "max_runtime_minutes": { "type": "integer", "minimum": 1 },
+                "deny_actions": { "type": "array", "items": { "type": "string" } }
+              }
+            }
+          }
+        },
+        "output_gates": {
+          "type": "object",
+          "properties": {
+            "block_secret_patterns_in_diffs": { "type": "boolean" },
+            "secret_scan_engine": { "enum": ["gitleaks", "trufflehog", "detect-secrets"] },
+            "require_human_review_above_lines": { "type": "integer", "minimum": 1 },
+            "require_signed_commits": { "type": "boolean" },
+            "require_pr_template": { "type": "boolean" },
+            "block_external_url_writes_in_scheduled_runs": { "type": "boolean" },
+            "flag_ai_authored_commits": { "type": "boolean" }
+          }
+        },
+        "logging": {
+          "type": "object",
+          "required": ["forward_events"],
+          "properties": {
+            "opentelemetry": { "type": "boolean" },
+            "otel_collector_endpoint": { "type": "string" },
+            "siem_webhook": { "type": "string" },
+            "forward_events": { "type": "array", "items": { "type": "string" } },
+            "retention_days": { "type": "integer", "minimum": 30 }
+          }
+        },
+        "identity": {
+          "type": "object",
+          "required": ["require_sso", "require_phishing_resistant_mfa"],
+          "properties": {
+            "require_sso": { "type": "boolean" },
+            "idp": { "type": "string" },
+            "require_phishing_resistant_mfa": { "type": "boolean" },
+            "require_compliant_device": { "type": "boolean" },
+            "deny_personal_accounts": { "type": "boolean" }
+          }
+        },
+        "preflight": {
+          "type": "object",
+          "properties": {
+            "run_on_login": { "type": "boolean" },
+            "run_interval_hours": { "type": "integer", "minimum": 1 },
+            "fail_action": { "enum": ["warn", "block"] },
+            "report_to_siem": { "type": "boolean" }
+          }
+        }
+      }
+    }
+  }
+}

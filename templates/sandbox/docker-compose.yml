@@ -1,0 +1,141 @@
+# =============================================================================
+# Sandbox tenant — self-hosted reference (Docker Compose)
+# =============================================================================
+# Use this for regulated environments where Cloudflare Pages isn't acceptable.
+# Stack:
+#   - app           the AI-built application under review
+#   - oauth-proxy   restricts access to the security-reviewers SSO group
+#   - vector        ships every request log to the SIEM
+#   - falco         eBPF runtime detection on the app container
+#
+# All four services run on a private Docker network with no internet egress
+# except to model APIs and approved package registries (enforced by the egress
+# firewall sidecar).
+#
+# Bring up:
+#   docker compose -f docker-compose.yml up -d
+#
+# Tear down (and wipe state):
+#   docker compose down -v
+# =============================================================================
+
+services:
+  app:
+    image: ${APP_IMAGE:-ghcr.io/example/ai-built-app:latest}
+    restart: unless-stopped
+    networks:
+      - sandbox
+    expose:
+      - "8080"
+    environment:
+      - APP_ENV=sandbox
+      - APP_DATA_BACKEND=sqlite-synthetic
+      - LOG_LEVEL=info
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:size=64m
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:8080/health || exit 1"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+
+  oauth-proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.6.0
+    restart: unless-stopped
+    networks:
+      - sandbox
+      - public
+    ports:
+      - "443:4180"
+    environment:
+      - OAUTH2_PROXY_PROVIDER=oidc
+      - OAUTH2_PROXY_OIDC_ISSUER_URL=${OIDC_ISSUER}
+      - OAUTH2_PROXY_CLIENT_ID=${OIDC_CLIENT_ID}
+      - OAUTH2_PROXY_CLIENT_SECRET=${OIDC_CLIENT_SECRET}
+      - OAUTH2_PROXY_COOKIE_SECRET=${COOKIE_SECRET}
+      - OAUTH2_PROXY_EMAIL_DOMAINS=${ALLOWED_EMAIL_DOMAINS}
+      - OAUTH2_PROXY_ALLOWED_GROUPS=security-reviewers
+      - OAUTH2_PROXY_UPSTREAMS=http://app:8080
+      - OAUTH2_PROXY_HTTP_ADDRESS=0.0.0.0:4180
+      - OAUTH2_PROXY_REVERSE_PROXY=true
+      - OAUTH2_PROXY_PASS_ACCESS_TOKEN=false
+    depends_on:
+      - app
+
+  vector:
+    image: timberio/vector:0.40.0-alpine
+    restart: unless-stopped
+    networks:
+      - sandbox
+    volumes:
+      - ./vector.yaml:/etc/vector/vector.yaml:ro
+    environment:
+      - SIEM_WEBHOOK=${SIEM_WEBHOOK}
+      - VECTOR_LOG=info
+    command: --config /etc/vector/vector.yaml
+
+  falco:
+    image: falcosecurity/falco-no-driver:latest
+    restart: unless-stopped
+    # Modern eBPF probe needs CAP_BPF + CAP_PERFMON + CAP_SYS_PTRACE rather
+    # than full --privileged. Requires kernel >= 5.8 (most modern hosts).
+    cap_add:
+      - BPF
+      - PERFMON
+      - SYS_PTRACE
+      - SYS_RESOURCE
+    networks:
+      - sandbox
+    volumes:
+      - /var/run/docker.sock:/host/var/run/docker.sock
+      - /proc:/host/proc:ro
+      - ./falco-rules.yaml:/etc/falco/falco_rules.local.yaml:ro
+    pid: host
+
+  # Egress firewall — forward CONNECT proxy with allow-listing.
+  # tinyproxy filters CONNECT targets via the `Filter` directive; nginx-alpine
+  # does NOT include ngx_http_proxy_connect_module, so it cannot be used as a
+  # forward CONNECT proxy out of the box.
+  egress-firewall:
+    image: kalaksi/tinyproxy:latest
+    restart: unless-stopped
+    # MUST be on both networks: `sandbox` so the app/vector can route
+    # through it; `public` so it can actually reach the allow-listed
+    # upstream targets (the model APIs etc.). Attaching only to `sandbox`
+    # (which is internal: true) leaves the proxy with no upstream and
+    # every request fails.
+    networks:
+      - sandbox
+      - public
+    volumes:
+      - ./tinyproxy.conf:/etc/tinyproxy/tinyproxy.conf:ro
+      - ./egress-allow-list.txt:/etc/tinyproxy/filter:ro
+    expose:
+      - "8888"
+    # Alternative: squid:latest with an http_access acl referencing dstdomain
+    # entries from egress-allow-list.txt — heavier but more featureful.
+
+networks:
+  sandbox:
+    internal: true       # no internet egress except via egress-firewall
+  public:
+    driver: bridge
+
+# =============================================================================
+# Notes
+# =============================================================================
+# - .env file holds OIDC_*, COOKIE_SECRET, SIEM_WEBHOOK, APP_IMAGE, ALLOWED_EMAIL_DOMAINS
+# - vector.yaml configures sources: docker_logs source -> http sink (SIEM)
+# - falco-rules.yaml extends the default rules with sandbox-specific detections:
+#     * write outside /tmp
+#     * outbound connection to non-allow-listed domain
+#     * spawn of shell from app container
+# - egress-allow-list.conf is an NGINX forward-proxy config restricting CONNECT
+#   targets to the same domains as the endpoint policy's network_egress block.
+# - Tear-down handled by an external cron that runs `docker compose down -v`
+#   after 14 days unless renewal ticket is filed.

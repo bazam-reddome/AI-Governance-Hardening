@@ -1,0 +1,260 @@
+# =============================================================================
+# AI-Built App — Stage 2 automated gates (GitHub Actions reference)
+# =============================================================================
+# Drop into .github/workflows/ai-app-gates.yml in any repo where AI tools
+# write code that may reach production.
+#
+# What this enforces (from the AI-Built App Promotion Runbook, Stage 2):
+#   - Secrets scan (gitleaks + trufflehog)
+#   - SAST (semgrep with AI-failure rules)
+#   - Dependency CVE scan (osv-scanner)
+#   - Licence scan (scancode)
+#   - SBOM (CycloneDX, with AI/ML extension)
+#   - Container scan (trivy)
+#   - SLSA L3 provenance attestation (via slsa-github-generator reusable workflow)
+#   - Cosign keyless signing of build artefacts
+#
+# Branch protection should require ALL of these jobs to pass before merge.
+#
+# Frameworks: NIST SSDF PS.3 / PW.4 / PW.8, SLSA Build L3,
+#             OWASP Top 10 for LLM Applications 2025 (LLM02 / LLM03 / LLM05).
+#
+# CURRENCY NOTE: action versions below are pinned to major-version tags so
+# Dependabot can update them. Verify the latest minor at adoption time and
+# pin to a digest if your supply-chain policy requires it.
+# =============================================================================
+name: AI App Gates
+
+on:
+  pull_request:
+    branches: [main, release/*]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write       # for cosign keyless + SLSA provenance
+  attestations: write
+  packages: write
+
+jobs:
+  secrets-scan:
+    name: Secrets scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: trufflehog
+        uses: trufflesecurity/trufflehog@main   # repin at adoption time
+        with:
+          extra_args: --only-verified --fail
+
+  sast:
+    name: SAST (Semgrep)
+    runs-on: ubuntu-latest
+    container: semgrep/semgrep:latest    # was returntocorp/semgrep — Semgrep, Inc rebranded the org
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          semgrep ci \
+            --config=p/llm-security \
+            --config=p/security-audit \
+            --config=p/owasp-top-ten \
+            --config=.ci/semgrep-ai-rules.yml \
+            --error \
+            --json \
+            --output=semgrep-results.json
+      - uses: actions/upload-artifact@v4
+        with: { name: semgrep-results, path: semgrep-results.json }
+
+  deps-cves:
+    name: Dependency CVE scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: OSV-Scanner
+        # The composite action lives at a NESTED path inside the repo. Pin to
+        # a specific release tag at adoption time:
+        #   github.com/google/osv-scanner-action/releases
+        # An alternative is the reusable workflow at
+        # google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml,
+        # which expects different inputs.
+        uses: google/osv-scanner-action/osv-scanner-action@v2.0.3
+        with:
+          scan-args: |-
+            --recursive
+            --skip-git
+            ./
+
+  licence-scan:
+    name: Licence scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install scancode-toolkit
+      - run: |
+          scancode -lpq --json-pp scancode-results.json .
+          # Fail on copyleft licences in production code
+          python -c "
+          import json, sys
+          with open('scancode-results.json') as f: data = json.load(f)
+          banned = {'GPL-3.0', 'AGPL-3.0', 'AGPL-3.0-or-later'}
+          violations = []
+          for f in data.get('files', []):
+              for lic in f.get('license_detections', []):
+                  for m in lic.get('matches', []):
+                      if m.get('license_expression') in banned:
+                          violations.append((f['path'], m['license_expression']))
+          if violations:
+              print('Banned licences:', violations); sys.exit(1)
+          "
+      - uses: actions/upload-artifact@v4
+        with: { name: scancode, path: scancode-results.json }
+
+  sbom:
+    name: SBOM (CycloneDX with AI/ML extension)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: anchore/sbom-action@v0
+        with:
+          format: cyclonedx-json
+          output-file: sbom.cdx.json
+          artifact-name: sbom.cdx.json
+
+      - name: Add AI/ML BOM annotations
+        # Two outputs: (a) a structured ML-BOM `mlComponent` entry under
+        # components[] for tools that consume the official CycloneDX ML
+        # extension; (b) `cdx:ai:*` namespaced metadata.properties for
+        # human-readable provenance. Note: at the time of writing CycloneDX
+        # has not registered an `ai:` taxonomy in its public taxonomy v1.0,
+        # so the `cdx:ai:*` names are vendor-prefixed convention only —
+        # consumers that strictly validate against CycloneDX taxonomies
+        # should rely on the `mlComponent` entry rather than the properties.
+        run: |
+          python - <<'PY'
+          import json, os, datetime
+          with open("sbom.cdx.json") as f: bom = json.load(f)
+
+          model = os.getenv("AI_MODEL", "unspecified")
+          corpus = os.getenv("PROMPT_CORPUS_VERSION", "unspecified")
+          pct = os.getenv("AI_AUTHORED_PCT", "unspecified")
+          now = datetime.datetime.utcnow().isoformat() + "Z"
+
+          # (a) Structured ML-BOM component (CycloneDX 1.5+ ML extension)
+          bom.setdefault("components", []).append({
+              "type": "machine-learning-model",
+              "bom-ref": f"ai-foundation-model-{model}",
+              "name": model,
+              "version": "see prompt corpus / model card for revision",
+              "modelCard": {
+                  "modelParameters": {
+                      "approach": {"type": "supervised"},
+                      "task": "code-generation",
+                  },
+              },
+          })
+
+          # (b) Vendor-namespaced provenance properties
+          bom.setdefault("metadata", {}).setdefault("properties", []).extend([
+              {"name": "cdx:ai:foundation-model", "value": model},
+              {"name": "cdx:ai:prompt-corpus-version", "value": corpus},
+              {"name": "cdx:ai:co-authored-lines-pct", "value": pct},
+              {"name": "cdx:ai:bom-generated-at", "value": now},
+          ])
+          with open("sbom.cdx.json", "w") as f: json.dump(bom, f, indent=2)
+          PY
+        env:
+          AI_MODEL: ${{ vars.AI_MODEL }}
+          PROMPT_CORPUS_VERSION: ${{ vars.PROMPT_CORPUS_VERSION }}
+          AI_AUTHORED_PCT: ${{ vars.AI_AUTHORED_PCT }}
+
+      - uses: actions/upload-artifact@v4
+        with: { name: sbom-cdx, path: sbom.cdx.json }
+
+  container-scan:
+    name: Container scan (Trivy)
+    if: ${{ hashFiles('Dockerfile') != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t app:scan .
+      - uses: aquasecurity/trivy-action@master   # pin to a release at adoption time
+        with:
+          image-ref: app:scan
+          severity: CRITICAL,HIGH
+          exit-code: 1
+
+  build-and-sign:
+    name: Build, attest, sign
+    # container-scan is in `needs:` so it's a hard gate when a Dockerfile exists.
+    # If your repo has no Dockerfile, the container-scan job will be skipped
+    # (its `if:` guard) and `needs:` will accept the skip.
+    needs: [secrets-scan, sast, deps-cves, licence-scan, sbom, container-scan]
+    runs-on: ubuntu-latest
+    outputs:
+      image-digest: ${{ steps.push.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        run: docker build -t ghcr.io/${{ github.repository }}/app:${{ github.sha }} .
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push and capture digest
+        id: push
+        run: |
+          docker push ghcr.io/${{ github.repository }}/app:${{ github.sha }}
+          DIGEST=$(docker buildx imagetools inspect "ghcr.io/${{ github.repository }}/app:${{ github.sha }}" --format '{{json .Manifest.Digest}}' | tr -d '"')
+          echo "digest=${DIGEST}" >> "$GITHUB_OUTPUT"
+          echo "image-with-digest=ghcr.io/${{ github.repository }}/app@${DIGEST}" >> "$GITHUB_OUTPUT"
+
+      - name: Cosign install
+        uses: sigstore/cosign-installer@v3
+      - name: Cosign sign (keyless)
+        run: cosign sign --yes "ghcr.io/${{ github.repository }}/app@${{ steps.push.outputs.digest }}"
+
+      - name: Attest SBOM
+        uses: actions/attest-sbom@v2
+        with:
+          subject-name: ghcr.io/${{ github.repository }}/app
+          subject-digest: ${{ steps.push.outputs.digest }}
+          sbom-path: sbom.cdx.json
+
+  # SLSA L3 provenance via the container-specific reusable workflow.
+  # The CONTAINER generator (generator_container_slsa3.yml) accepts
+  # `image:` + `digest:` inputs. The GENERIC generator
+  # (generator_generic_slsa3.yml) takes `base64-subjects` instead — use
+  # whichever fits your artefact type.
+  # Pin to a fixed tag at adoption time; check
+  # github.com/slsa-framework/slsa-github-generator/releases for the
+  # latest stable release.
+  slsa-provenance:
+    name: SLSA L3 provenance
+    needs: [build-and-sign]
+    permissions:
+      id-token: write
+      contents: read
+      actions: read
+      packages: write
+    uses: slsa-framework/slsa-github-generator/.github/workflows/[email protected]
+    with:
+      image: ghcr.io/${{ github.repository }}/app
+      digest: ${{ needs.build-and-sign.outputs.image-digest }}
+      registry-username: ${{ github.actor }}
+    secrets:
+      registry-password: ${{ secrets.GITHUB_TOKEN }}
