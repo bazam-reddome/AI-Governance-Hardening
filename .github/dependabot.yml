@@ -1,0 +1,20 @@
+version: 2
+
+updates:
+  # Keep GitHub Actions pinned to their latest commit SHAs automatically
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Dubai"
+    commit-message:
+      prefix: "ci(deps)"
+    labels:
+      - "dependencies"
+      - "ci"
+    reviewers:
+      - "bazam-reddome"
+    assignees:
+      - "bazam-reddome"

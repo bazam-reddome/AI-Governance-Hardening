@@ -1,0 +1,11 @@
+# CODEOWNERS — every pull request requires review from the repository owner.
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Global rule: all files require sign-off from the maintainer
+*   @bazam-reddome
+
+# Workflow changes additionally require explicit re-approval
+.github/workflows/   @bazam-reddome
+
+# Template assets
+templates/           @bazam-reddome
