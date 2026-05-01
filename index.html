@@ -744,15 +744,15 @@
 
         <a class="overview-card" href="#endpoint">
           <span class="ord">06</span>
-          <h3>Endpoint &amp; SDLC</h3>
-          <p class="lede">Policy-as-code YAML, pre-flight scripts, three sandbox patterns (Cloudflare · Docker · Kubernetes), hardened Dockerfile, Kyverno admission policies, pre-commit + CI gates, plus a 14-category tool catalogue with free vs paid clearly tagged.</p>
-          <span class="arrow">Hardening artefacts →</span>
+          <h3>Endpoint · Sandbox · SDLC</h3>
+          <p class="lede">Seven engineering artefacts. Endpoint policy-as-code (one YAML → AppLocker / TCC / firejail / managed-settings.json) · pre-flight check scripts · Intune Endpoint Deployment Guide · three sandbox patterns (Cloudflare · Docker · Kubernetes with PSS-restricted, Kyverno admission, cosign verification) · hardened Dockerfile template · pre-commit + CI gates with SLSA L3 + cosign + CycloneDX ML-BOM · 14-category Tool Catalogue with free vs paid clearly tagged.</p>
+          <span class="arrow">Engineering artefacts →</span>
         </a>
 
         <a class="overview-card" href="#guides">
           <span class="ord">07</span>
           <h3>Step-by-step guides</h3>
-          <p class="lede">Walk-throughs for Intune deployment (macOS + Windows 11) and the six-stage SDLC promotion path.</p>
+          <p class="lede">Three guided walk-throughs — Intune endpoint deployment (macOS + Windows 11), standing up the AI-built app sandbox (Cloudflare · Docker · Kubernetes), and the six-stage SDLC promotion path. Numbered steps with named owners and exit criteria.</p>
           <span class="arrow">Walk through →</span>
         </a>
 
@@ -1651,9 +1651,9 @@
   <section id="endpoint" style="background:var(--surface-2);border-bottom:1px solid var(--border)">
     <div class="container">
       <div class="section-head">
-        <div class="kicker">Endpoint &amp; SDLC</div>
-        <h2>Contain AI coding tools on the metal — then promote what they build.</h2>
-        <p>Two operational layers most starter kits skip. The Endpoint Hardening Profile enforces Claude Code via the published <code>managed-settings.json</code> policy and contains the rest (Codex, Copilot CLI, Cursor, ChatGPT desktop) at the OS layer — TCC on macOS, AppLocker on Windows, firejail on Linux — plus a deny-by-default proxy egress policy applied at your SSE / corporate proxy. The CI / sandbox bundle then gates anything they produce through SAST, SBOM, signing, an isolated sandbox, and a security review before it reaches prod.</p>
+        <div class="kicker">Endpoint · Sandbox · SDLC</div>
+        <h2>Contain AI coding tools on the metal — sandbox what they build — promote what passes review.</h2>
+        <p>The engineering layer most starter kits skip. <strong>Endpoint:</strong> the Endpoint Hardening Profile enforces Claude Code via the published <code>managed-settings.json</code> policy and contains the rest (Codex CLI, Copilot, Cursor, ChatGPT desktop) at the OS layer — TCC on macOS, AppLocker on Windows, firejail on Linux — plus a deny-by-default proxy egress policy. <strong>Sandbox:</strong> three isolated deployment patterns (Cloudflare Workers, capability-hardened Docker Compose, Kubernetes with PSS-restricted namespaces, Kyverno admission policies and cosign-verified images) for the AI-built app to live in during validation. <strong>SDLC:</strong> pre-commit + CI gates with SLSA L3 provenance, Sigstore cosign signing and CycloneDX SBOM (with AI/ML extension), plus a 14-category Tool Catalogue showing every tool — free or paid — that fits each gate.</p>
       </div>
 
       <div class="templates-grid">
